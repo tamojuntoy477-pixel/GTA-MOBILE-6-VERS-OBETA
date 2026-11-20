@@ -3,6 +3,8 @@
     <application
         android:theme="@android:style/Theme.Material.NoActionBar"
         android:label="GTA MOBILE 6 BETA"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:usesCleartextTraffic="false"
         android:allowBackup="false"
         android:supportsRtl="true">
