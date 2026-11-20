@@ -1,18 +1,23 @@
-# GTA MOBILE 6 — Beta 0.1.0
+# GTA MOBILE 6 — Beta 0.2.0 (protótipo 3D)
 
-Projeto Android em desenvolvimento. Esta primeira build é um protótipo 2D top-down com cidade original simplificada e movimento por toque.
+Projeto Android original em desenvolvimento. Esta versão troca a antiga cena 2D por uma cena 3D renderizada com OpenGL ES 2.0.
 
-## Gerar APK
-Cada push na branch `main` inicia o workflow **Build Android APK**. Quando terminar com sucesso, baixe o arquivo `GTA-MOBILE-6-BETA-APK` na seção **Actions → workflow run → Artifacts**.
+## Controles
+- Toque em um ponto da tela para mover o personagem até aquela posição aproximada.
+- A câmera acompanha o personagem.
 
-## Estado atual
-- [x] Estrutura Android nativa
-- [x] Cena de cidade protótipo
-- [x] Movimento do personagem por toque
-- [x] Compilação automática de APK debug
+## Nesta etapa
+- [x] Renderização 3D com OpenGL ES 2.0
+- [x] Terreno, avenidas, prédios low-poly e árvores em 3D
+- [x] Personagem provisório em 3D e movimento por toque
+- [x] Ícone do aplicativo separado da arte do jogo
+- [ ] Modelo humano detalhado e animações
 - [ ] Veículos dirigíveis
-- [ ] Missões e NPCs
-- [ ] Mapa 3D e otimização
+- [ ] Missões, NPCs, áudio e salvamento
+- [ ] Mapa expandido, iluminação e otimização
 - [ ] Multiplayer/online
 
-Este projeto é original e não inclui código, mapas, marcas ou arquivos proprietários da Rockstar. O protótipo não é GTA VI oficial.
+## Gerar APK
+Cada push na branch `main` inicia o workflow **Build Android APK**. Quando terminar com sucesso, baixe o artefato `GTA-MOBILE-6-BETA-APK` na seção **Actions → workflow run → Artifacts**.
+
+Este é um protótipo original e não é um produto oficial da Rockstar nem contém arquivos proprietários de GTA VI.
