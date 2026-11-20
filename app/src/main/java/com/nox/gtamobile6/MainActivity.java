@@ -6,6 +6,7 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.view.MotionEvent;
+import android.view.View;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
