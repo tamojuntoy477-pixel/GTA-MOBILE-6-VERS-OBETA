@@ -115,6 +115,11 @@ public class MainActivity extends Activity {
             box(0,-0.10f,0,48f,0.04f,5.2f,0.16f,0.17f,0.19f);
             box(0,-0.07f,0,0.18f,0.025f,40f,0.85f,0.72f,0.35f);
             box(0,-0.07f,0,40f,0.025f,0.18f,0.85f,0.72f,0.35f);
+            // Lane markings and crosswalks
+            for (int i=-4;i<=4;i++) {
+                box(i*4.2f,-0.045f,0,0.055f,0.018f,2.0f,0.92f,0.88f,0.66f);
+                box(0,-0.045f,i*4.2f,2.0f,0.018f,0.055f,0.92f,0.88f,0.66f);
+            }
             // Original low-poly city blocks
             for (int x=-3;x<=3;x++) for (int z=-3;z<=3;z++) {
                 if (Math.abs(x)<=1 || Math.abs(z)<=1) continue;
@@ -130,10 +135,23 @@ public class MainActivity extends Activity {
                 tree(i*7.2f+2.1f, -3.7f);
                 tree(i*7.2f-2.1f, 3.7f);
             }
+            // Moving traffic: lightweight original low-poly cars
+            trafficCar(-3.9f, 0.28f, -8f, 0.92f, 0.22f, 0.42f);
+            trafficCar(3.9f, 0.28f, 7f, 0.18f, 0.38f, 0.82f);
+            trafficCar(-8f, 0.28f, 3.9f, 0.82f, 0.68f, 0.12f);
+            trafficCar(8f, 0.28f, -3.9f, 0.20f, 0.68f, 0.38f);
             // Player character placeholder, fully 3D
             box(playerX,0.72f,playerZ,0.38f,0.72f,0.30f,0.82f,0.12f,0.10f);
             box(playerX,1.62f,playerZ,0.29f,0.25f,0.29f,0.88f,0.68f,0.52f);
             GLES20.glDisableVertexAttribArray(positionHandle);
+        }
+        private void trafficCar(float x,float y,float z,float r,float g,float b) {
+            box(x,y,z,0.62f,0.24f,1.05f,r,g,b);
+            box(x,y+0.27f,z-0.10f,0.40f,0.19f,0.48f,0.16f,0.22f,0.28f);
+            box(x-0.42f,y-0.12f,z-0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
+            box(x+0.42f,y-0.12f,z-0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
+            box(x-0.42f,y-0.12f,z+0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
+            box(x+0.42f,y-0.12f,z+0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
         }
         private void tree(float x,float z) {
             box(x,0.65f,z,0.16f,0.65f,0.16f,0.34f,0.20f,0.10f);
