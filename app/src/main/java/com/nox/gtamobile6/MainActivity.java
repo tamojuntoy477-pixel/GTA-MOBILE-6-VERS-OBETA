@@ -1,6 +1,7 @@
 package com.nox.gtamobile6;
 
 import android.app.Activity;
+import android.content.res.AssetManager;
 import android.os.Bundle;
 import android.opengl.GLSurfaceView;
 import android.opengl.GLES20;
@@ -14,6 +15,12 @@ import android.view.View;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
 
@@ -39,7 +46,7 @@ public class MainActivity extends Activity {
             super(a);
             setEGLContextClientVersion(2);
             setEGLConfigChooser(8,8,8,8,16,0);
-            renderer = new CityRenderer();
+            renderer = new CityRenderer(a.getAssets());
             setRenderer(renderer);
             setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         }
@@ -130,6 +137,108 @@ public class MainActivity extends Activity {
         }
     }
 
+    // Loads an original triangulated OBJ character asset from app/src/main/assets.
+    static class HumanModel {
+        static class Part {
+            final FloatBuffer positions, normals;
+            final int count;
+            final float r,g,b;
+            Part(float[] p,float[] n,float cr,float cg,float cb) {
+                ByteBuffer pb=ByteBuffer.allocateDirect(p.length*4).order(ByteOrder.nativeOrder());
+                positions=pb.asFloatBuffer(); positions.put(p).position(0);
+                ByteBuffer nb=ByteBuffer.allocateDirect(n.length*4).order(ByteOrder.nativeOrder());
+                normals=nb.asFloatBuffer(); normals.put(n).position(0);
+                count=p.length/3; r=cr; g=cg; b=cb;
+            }
+        }
+        static class Builder {
+            final ArrayList<Float> p=new ArrayList<>(), n=new ArrayList<>();
+            void triangle(float[] a,float[] b,float[] c) {
+                float ux=b[0]-a[0], uy=b[1]-a[1], uz=b[2]-a[2];
+                float vx=c[0]-a[0], vy=c[1]-a[1], vz=c[2]-a[2];
+                float nx=uy*vz-uz*vy, ny=uz*vx-ux*vz, nz=ux*vy-uy*vx;
+                float len=(float)Math.sqrt(nx*nx+ny*ny+nz*nz);
+                if(len<0.00001f) return;
+                nx/=len; ny/=len; nz/=len;
+                put(a,nx,ny,nz); put(b,nx,ny,nz); put(c,nx,ny,nz);
+            }
+            void put(float[] v,float nx,float ny,float nz) {
+                p.add(v[0]); p.add(v[1]); p.add(v[2]);
+                n.add(nx); n.add(ny); n.add(nz);
+            }
+            Part finish(float r,float g,float b) {
+                float[] pa=new float[p.size()], na=new float[n.size()];
+                for(int i=0;i<pa.length;i++) pa[i]=p.get(i);
+                for(int i=0;i<na.length;i++) na[i]=n.get(i);
+                return new Part(pa,na,r,g,b);
+            }
+        }
+        final ArrayList<Part> parts=new ArrayList<>();
+        static HumanModel load(AssetManager assets) {
+            HumanModel model=new HumanModel();
+            try {
+                ArrayList<float[]> vertices=new ArrayList<>();
+                HashMap<String,float[]> colors=new HashMap<>();
+                colors.put("skin",new float[]{0.58f,0.34f,0.22f});
+                colors.put("jacket",new float[]{0.075f,0.19f,0.52f});
+                colors.put("pants",new float[]{0.105f,0.13f,0.19f});
+                colors.put("shoes",new float[]{0.025f,0.03f,0.04f});
+                colors.put("hair",new float[]{0.025f,0.018f,0.015f});
+                colors.put("details",new float[]{0.025f,0.02f,0.018f});
+                Builder current=null; String material="jacket";
+                InputStream stream=assets.open("player_human.obj");
+                BufferedReader reader=new BufferedReader(new InputStreamReader(stream));
+                String line;
+                while((line=reader.readLine())!=null) {
+                    line=line.trim();
+                    if(line.length()==0 || line.startsWith("#")) continue;
+                    String[] t=line.split("\\s+");
+                    if(t[0].equals("v") && t.length>=4) {
+                        vertices.add(new float[]{Float.parseFloat(t[1]),Float.parseFloat(t[2]),Float.parseFloat(t[3])});
+                    } else if(t[0].equals("usemtl") && t.length>=2) {
+                        if(current!=null && current.p.size()>0) {
+                            float[] col=colors.get(material);
+                            if(col!=null) model.parts.add(current.finish(col[0],col[1],col[2]));
+                        }
+                        material=t[1]; current=new Builder();
+                    } else if(t[0].equals("f") && t.length>=4) {
+                        if(current==null) current=new Builder();
+                        int ia=Integer.parseInt(t[1].split("/")[0])-1;
+                        int ib=Integer.parseInt(t[2].split("/")[0])-1;
+                        int ic=Integer.parseInt(t[3].split("/")[0])-1;
+                        current.triangle(vertices.get(ia),vertices.get(ib),vertices.get(ic));
+                    }
+                }
+                reader.close();
+                if(current!=null && current.p.size()>0) {
+                    float[] col=colors.get(material);
+                    if(col!=null) model.parts.add(current.finish(col[0],col[1],col[2]));
+                }
+            } catch(Exception error) {
+                model.parts.clear();
+                android.util.Log.e("NOX-HUMAN","OBJ load failed",error);
+            }
+            return model.parts.isEmpty()?null:model;
+        }
+        void draw(CityRenderer renderer,float x,float y,float z) {
+            Matrix.setIdentityM(renderer.model,0);
+            Matrix.translateM(renderer.model,0,x,y,z);
+            Matrix.multiplyMM(renderer.temp,0,renderer.view,0,renderer.model,0);
+            Matrix.multiplyMM(renderer.mvp,0,renderer.projection,0,renderer.temp,0);
+            GLES20.glUniformMatrix4fv(renderer.mvpHandle,1,false,renderer.mvp,0);
+            GLES20.glUniformMatrix4fv(renderer.modelHandle,1,false,renderer.model,0);
+            GLES20.glDisable(GLES20.GL_CULL_FACE);
+            for(Part part:parts) {
+                GLES20.glUniform4f(renderer.colorHandle,part.r,part.g,part.b,1f);
+                part.positions.position(0); part.normals.position(0);
+                GLES20.glVertexAttribPointer(renderer.positionHandle,3,GLES20.GL_FLOAT,false,12,part.positions);
+                GLES20.glVertexAttribPointer(renderer.normalHandle,3,GLES20.GL_FLOAT,false,12,part.normals);
+                GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,part.count);
+            }
+            GLES20.glEnable(GLES20.GL_CULL_FACE);
+        }
+    }
+
     static class CityRenderer implements GLSurfaceView.Renderer {
         private static final String VS =
             "uniform mat4 uMVP; uniform mat4 uModel; attribute vec3 aPosition; attribute vec3 aNormal; varying vec3 vNormal; varying float vDepth; void main(){ vec4 p=uMVP*vec4(aPosition,1.0); gl_Position=p; vNormal=normalize(aNormal); vDepth=abs(p.z/p.w); }";
@@ -151,7 +260,7 @@ public class MainActivity extends Activity {
         private volatile float playerX = 0, playerZ = 0, targetX = 0, targetZ = 0;
         private volatile float moveX = 0f, moveZ = 0f;
         private volatile float cameraYaw = 0f, cameraPitch = 5.4f;
-        private int width = 1, height = 1;
+        private int width = 1, height = 1;\n        private final AssetManager assets;\n        private HumanModel humanModel;\n        CityRenderer(AssetManager assets) { this.assets=assets; }
 
         void setMoveInput(float x, float z) { moveX = Math.max(-1f,Math.min(1f,x)); moveZ = Math.max(-1f,Math.min(1f,z)); }
         void rotateCamera(float dx,float dy) {
@@ -176,7 +285,7 @@ public class MainActivity extends Activity {
             }
             ByteBuffer nb=ByteBuffer.allocateDirect(faceNormals.length*4).order(ByteOrder.nativeOrder());
             cubeNormals=nb.asFloatBuffer(); cubeNormals.put(faceNormals).position(0);
-            sphereVertices = buildSphere(24, 32);
+            sphereVertices = buildSphere(24, 32);\n            humanModel = HumanModel.load(assets);
             sphereVertexCount = sphereVertices.limit() / 3;
             int v = shader(GLES20.GL_VERTEX_SHADER, VS);
             int f = shader(GLES20.GL_FRAGMENT_SHADER, FS);
@@ -312,7 +421,7 @@ public class MainActivity extends Activity {
             trafficCar(-8f, 0.28f, 3.9f, 0.82f, 0.68f, 0.12f);
             trafficCar(8f, 0.28f, -3.9f, 0.20f, 0.68f, 0.38f);
             // Detailed original player avatar: jacket, shirt, trousers, shoes, hair and face
-            drawPlayer(playerX,playerZ);
+            if(humanModel!=null) {\n                float bob=(float)Math.sin(System.nanoTime()*0.0000000024)*0.012f;\n                humanModel.draw(this,playerX,bob,playerZ);\n            } else { drawPlayer(playerX,playerZ); }
             GLES20.glDisableVertexAttribArray(positionHandle);
             GLES20.glDisableVertexAttribArray(normalHandle);
         }
