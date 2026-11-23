@@ -64,7 +64,8 @@ public class MainActivity extends Activity {
             -1,1,1, 1,1,1, 1,1,-1, -1,1,1, 1,1,-1, -1,1,-1,
             -1,-1,-1, 1,-1,-1, 1,-1,1, -1,-1,-1, 1,-1,1, -1,-1,1
         };
-        private FloatBuffer vertices;
+        private FloatBuffer vertices, sphereVertices;
+        private int sphereVertexCount;
         private int program, positionHandle, mvpHandle, colorHandle;
         private final float[] projection = new float[16], view = new float[16];
         private final float[] model = new float[16], mvp = new float[16], temp = new float[16];
@@ -81,6 +82,8 @@ public class MainActivity extends Activity {
             GLES20.glEnable(GLES20.GL_CULL_FACE);
             ByteBuffer bb = ByteBuffer.allocateDirect(cube.length * 4).order(ByteOrder.nativeOrder());
             vertices = bb.asFloatBuffer(); vertices.put(cube).position(0);
+            sphereVertices = buildSphere(12, 16);
+            sphereVertexCount = sphereVertices.limit() / 3;
             int v = shader(GLES20.GL_VERTEX_SHADER, VS);
             int f = shader(GLES20.GL_FRAGMENT_SHADER, FS);
             program = GLES20.glCreateProgram();
@@ -89,6 +92,41 @@ public class MainActivity extends Activity {
             positionHandle = GLES20.glGetAttribLocation(program, "aPosition");
             mvpHandle = GLES20.glGetUniformLocation(program, "uMVP");
             colorHandle = GLES20.glGetUniformLocation(program, "uColor");
+        }
+        private FloatBuffer buildSphere(int stacks, int slices) {
+            java.util.ArrayList<Float> data = new java.util.ArrayList<>();
+            for (int i=0;i<stacks;i++) {
+                double a0=Math.PI*i/stacks, a1=Math.PI*(i+1)/stacks;
+                for (int j=0;j<slices;j++) {
+                    double b0=2*Math.PI*j/slices, b1=2*Math.PI*(j+1)/slices;
+                    addTriangle(data,a0,b0,a1,b0,a1,b1);
+                    addTriangle(data,a0,b0,a1,b1,a0,b1);
+                }
+            }
+            float[] out=new float[data.size()];
+            for(int i=0;i<out.length;i++) out[i]=data.get(i);
+            ByteBuffer bytes=ByteBuffer.allocateDirect(out.length*4).order(ByteOrder.nativeOrder());
+            FloatBuffer result=bytes.asFloatBuffer(); result.put(out).position(0); return result;
+        }
+        private void addTriangle(java.util.ArrayList<Float> out,double a,double b,double c,double d,double e,double f) {
+            addPoint(out,a,b); addPoint(out,c,d); addPoint(out,e,f);
+        }
+        private void addPoint(java.util.ArrayList<Float> out,double a,double b) {
+            out.add((float)(Math.sin(a)*Math.cos(b)));
+            out.add((float)Math.cos(a));
+            out.add((float)(Math.sin(a)*Math.sin(b)));
+        }
+        private void sphere(float x,float y,float z,float sx,float sy,float sz,float r,float g,float b) {
+            Matrix.setIdentityM(model,0);
+            Matrix.translateM(model,0,x,y,z);
+            Matrix.scaleM(model,0,sx,sy,sz);
+            Matrix.multiplyMM(temp,0,view,0,model,0);
+            Matrix.multiplyMM(mvp,0,projection,0,temp,0);
+            GLES20.glUniformMatrix4fv(mvpHandle,1,false,mvp,0);
+            GLES20.glUniform4f(colorHandle,r,g,b,1f);
+            sphereVertices.position(0);
+            GLES20.glVertexAttribPointer(positionHandle,3,GLES20.GL_FLOAT,false,12,sphereVertices);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,sphereVertexCount);
         }
         private int shader(int type, String source) {
             int s = GLES20.glCreateShader(type);
@@ -191,8 +229,15 @@ public class MainActivity extends Activity {
             box(x+0.17f,0.30f+bob,z,0.14f,0.30f,0.15f,0.12f,0.15f,0.22f);
             box(x-0.17f,0.055f+bob,z-0.04f,0.17f,0.09f,0.25f,0.045f,0.05f,0.06f);
             box(x+0.17f,0.055f+bob,z-0.04f,0.17f,0.09f,0.25f,0.045f,0.05f,0.06f);
-            box(x,1.48f+bob,z,0.25f,0.29f,0.23f,0.72f,0.48f,0.32f); // head
-            box(x,1.69f+bob,z,0.26f,0.12f,0.25f,0.08f,0.055f,0.04f); // hair
+            // Rounded head and facial features replace the old cube head.
+            sphere(x,1.49f+bob,z,0.235f,0.29f,0.22f,0.72f,0.48f,0.32f);
+            sphere(x,1.70f+bob,z+0.015f,0.245f,0.105f,0.23f,0.075f,0.048f,0.035f); // hair cap
+            sphere(x-0.235f,1.48f+bob,z,0.055f,0.085f,0.055f,0.68f,0.43f,0.29f); // ear
+            sphere(x+0.235f,1.48f+bob,z,0.055f,0.085f,0.055f,0.68f,0.43f,0.29f);
+            sphere(x-0.085f,1.515f+bob,z-0.195f,0.027f,0.027f,0.018f,0.035f,0.035f,0.035f); // eyes
+            sphere(x+0.085f,1.515f+bob,z-0.195f,0.027f,0.027f,0.018f,0.035f,0.035f,0.035f);
+            sphere(x,1.455f+bob,z-0.222f,0.035f,0.045f,0.035f,0.60f,0.37f,0.25f); // nose
+            sphere(x,1.395f+bob,z-0.205f,0.065f,0.012f,0.018f,0.25f,0.08f,0.07f); // mouth
             box(x-0.29f,0.94f+bob,z+0.02f,0.10f,0.30f,0.18f,0.06f,0.12f,0.38f); // jacket side detail
             box(x+0.29f,0.94f+bob,z+0.02f,0.10f,0.30f,0.18f,0.06f,0.12f,0.38f);
             box(x,1.17f+bob,z+0.25f,0.22f,0.25f,0.08f,0.08f,0.10f,0.13f); // backpack
@@ -222,6 +267,8 @@ public class MainActivity extends Activity {
             Matrix.multiplyMM(mvp,0,projection,0,temp,0);
             GLES20.glUniformMatrix4fv(mvpHandle,1,false,mvp,0);
             GLES20.glUniform4f(colorHandle,r,g,b,1f);
+            vertices.position(0);
+            GLES20.glVertexAttribPointer(positionHandle,3,GLES20.GL_FLOAT,false,12,vertices);
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,36);
         }
     }
