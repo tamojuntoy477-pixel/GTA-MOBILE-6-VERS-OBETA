@@ -53,7 +53,7 @@ public class MainActivity extends Activity {
 
     static class CityRenderer implements GLSurfaceView.Renderer {
         private static final String VS =
-            "uniform mat4 uMVP; uniform mat4 uModel; attribute vec3 aPosition; attribute vec3 aNormal; varying vec3 vNormal; varying float vDepth; void main(){ vec4 p=uMVP*vec4(aPosition,1.0); gl_Position=p; vNormal=normalize(mat3(uModel)*aNormal); vDepth=abs(p.z/p.w); }";
+            "uniform mat4 uMVP; uniform mat4 uModel; attribute vec3 aPosition; attribute vec3 aNormal; varying vec3 vNormal; varying float vDepth; void main(){ vec4 p=uMVP*vec4(aPosition,1.0); gl_Position=p; vNormal=normalize(aNormal); vDepth=abs(p.z/p.w); }";
         private static final String FS =
             "precision mediump float; uniform vec4 uColor; varying vec3 vNormal; varying float vDepth; void main(){ vec3 n=normalize(vNormal); vec3 light=normalize(vec3(-0.42,0.82,0.36)); float diffuse=max(dot(n,light),0.0); float hemi=0.30+0.22*max(n.y,0.0); float shade=clamp(hemi+diffuse*0.62,0.28,1.0); vec3 lit=uColor.rgb*shade; float fog= smoothstep(0.72,0.995,vDepth); vec3 sky=vec3(0.53,0.70,0.82); gl_FragColor=vec4(mix(lit,sky,fog*0.58),uColor.a); }";
         private final float[] cube = {
@@ -162,8 +162,12 @@ public class MainActivity extends Activity {
             GLES20.glVertexAttribPointer(normalHandle,3,GLES20.GL_FLOAT,false,12,cubeNormals);
 
             box(0,-0.28f,0,76f,0.25f,76f,0.22f,0.42f,0.25f); // expanded city terrain
-            // Asphalt avenues and sidewalks
+            // Asphalt avenues, raised sidewalks and curb edges.
             box(0,-0.12f,0,5.2f,0.04f,48f,0.16f,0.17f,0.19f);
+            box(-3.05f,-0.075f,0,0.72f,0.075f,48f,0.48f,0.48f,0.45f);
+            box(3.05f,-0.075f,0,0.72f,0.075f,48f,0.48f,0.48f,0.45f);
+            box(0,-0.075f,-3.05f,48f,0.075f,0.72f,0.48f,0.48f,0.45f);
+            box(0,-0.075f,3.05f,48f,0.075f,0.72f,0.48f,0.48f,0.45f);
             box(0,-0.10f,0,48f,0.04f,5.2f,0.16f,0.17f,0.19f);
             box(0,-0.07f,0,0.18f,0.025f,40f,0.85f,0.72f,0.35f);
             box(0,-0.07f,0,40f,0.025f,0.18f,0.85f,0.72f,0.35f);
@@ -208,9 +212,12 @@ public class MainActivity extends Activity {
             box(10f,0.03f,10f,2.7f,0.025f,0.18f,0.72f,0.68f,0.55f);
             bench(8.2f,9.0f);
             bench(11.8f,11.0f);
-            // Moving traffic: lightweight original low-poly cars
-            trafficCar(-3.9f, 0.28f, -8f, 0.92f, 0.22f, 0.42f);
-            trafficCar(3.9f, 0.28f, 7f, 0.18f, 0.38f, 0.82f);
+            // Moving traffic on the main avenue.
+            float trafficTime=(System.nanoTime()%60000000000L)*0.000000001f;
+            float carA=(float)Math.sin(trafficTime*0.42f)*10.5f;
+            float carB=(float)Math.sin(trafficTime*0.42f+Math.PI)*10.5f;
+            trafficCar(-3.9f, 0.28f, carA, 0.92f, 0.22f, 0.42f);
+            trafficCar(3.9f, 0.28f, carB, 0.18f, 0.38f, 0.82f);
             trafficCar(-8f, 0.28f, 3.9f, 0.82f, 0.68f, 0.12f);
             trafficCar(8f, 0.28f, -3.9f, 0.20f, 0.68f, 0.38f);
             // Detailed original player avatar: jacket, shirt, trousers, shoes, hair and face
