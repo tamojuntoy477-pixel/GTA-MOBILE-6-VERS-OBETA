@@ -403,7 +403,10 @@ public class MainActivity extends Activity {
             segment(x-0.145f,0.48f+bob+legSwing,z+legSwing*0.36f,x-0.145f,0.18f+bob,z+legSwing*0.72f,0.092f,0.16f,0.18f,0.22f);
             segment(x+0.145f,0.83f+bob,z,x+0.145f,0.48f+bob-legSwing,z-legSwing*0.36f,0.125f,pantsR,pantsG,pantsB);
             segment(x+0.145f,0.48f+bob-legSwing,z-legSwing*0.36f,x+0.145f,0.18f+bob,z-legSwing*0.72f,0.092f,0.16f,0.18f,0.22f);
+            // Waist and belt give the torso a clearer human silhouette.
             sphere(x,0.91f+bob,z,0.255f,0.19f,0.16f,0.09f,0.15f,0.36f);
+            box(x,0.91f+bob,z-0.005f,0.255f,0.035f,0.17f,0.055f,0.065f,0.085f);
+            box(x,0.91f+bob,z-0.185f,0.055f,0.025f,0.018f,0.62f,0.55f,0.28f);
 
             // Jacket, chest panels and collar.
             sphere(x,1.16f+bob,z,0.315f,0.33f+idleBreath,0.19f,jacketR,jacketG,jacketB);
@@ -414,6 +417,10 @@ public class MainActivity extends Activity {
             sphere(x+0.105f,1.19f+bob,z-0.181f,0.018f,0.24f,0.018f,0.20f,0.30f,0.58f);
             sphere(x,1.46f+bob,z-0.005f,0.115f,0.105f,0.12f,0.82f,0.80f,0.72f);
             sphere(x,1.49f+bob,z+0.012f,0.105f,0.07f,0.105f,skinR,skinG,skinB);
+            // Visible zipper, jacket seams and small chest badge.
+            box(x,1.17f+bob,z-0.194f,0.012f,0.22f,0.012f,0.035f,0.055f,0.12f);
+            box(x-0.19f,1.27f+bob,z-0.191f,0.065f,0.055f,0.018f,0.78f,0.72f,0.42f);
+            sphere(x,1.39f+bob,z-0.205f,0.045f,0.035f,0.018f,0.12f,0.16f,0.22f);
 
             // Arms swing in opposition to the legs, with elbows and hands.
             sphere(x-0.335f,1.34f+bob,z,0.155f,0.17f,0.155f,jacketR,jacketG,jacketB);
@@ -429,6 +436,12 @@ public class MainActivity extends Activity {
             segment(rightElbowX,rightElbowY,z+armSwing*0.45f,rightHandX,handY,z+armSwing,0.092f,0.075f,0.18f,0.48f);
             sphere(leftHandX,handY-0.04f,z-armSwing,0.075f,0.09f,0.075f,skinR,skinG,skinB);
             sphere(rightHandX,handY-0.04f,z+armSwing,0.075f,0.09f,0.075f,skinR,skinG,skinB);
+            // Subtle palm and finger groups make hands less like round joints.
+            for(int finger=0;finger<3;finger++) {
+                float spread=(finger-1)*0.035f;
+                segment(leftHandX+spread,handY-0.07f,z-armSwing,leftHandX+spread,handY-0.12f,z-armSwing,0.018f,skinR,skinG,skinB);
+                segment(rightHandX+spread,handY-0.07f,z+armSwing,rightHandX+spread,handY-0.12f,z+armSwing,0.018f,skinR,skinG,skinB);
+            }
             sphere(x-0.445f-armSwing,0.82f+bob,z-armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
             sphere(x+0.445f+armSwing,0.82f+bob,z+armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
 
@@ -447,6 +460,12 @@ public class MainActivity extends Activity {
             sphere(x+0.075f,1.845f+bob,z-0.155f,0.045f,0.012f,0.018f,0.045f,0.03f,0.025f);
             sphere(x,1.735f+bob,z-0.181f,0.027f,0.045f,0.028f,0.48f,0.25f,0.16f);
             sphere(x,1.675f+bob,z-0.165f,0.043f,0.009f,0.012f,0.20f,0.045f,0.04f);
+            // Ear details, cheek planes and a subtle chin improve the head profile.
+            sphere(x-0.19f,1.77f+bob,z-0.012f,0.018f,0.038f,0.018f,0.32f,0.17f,0.12f);
+            sphere(x+0.19f,1.77f+bob,z-0.012f,0.018f,0.038f,0.018f,0.32f,0.17f,0.12f);
+            sphere(x,1.64f+bob,z-0.105f,0.085f,0.035f,0.065f,skinR,skinG,skinB);
+            // Hairline and layered hair volume.
+            sphere(x,1.91f+bob,z+0.085f,0.145f,0.09f,0.11f,0.025f,0.019f,0.018f);
 
             // Backpack and shoulder straps.
             sphere(x,1.13f+bob,z+0.205f,0.19f,0.25f,0.075f,0.045f,0.055f,0.075f);
