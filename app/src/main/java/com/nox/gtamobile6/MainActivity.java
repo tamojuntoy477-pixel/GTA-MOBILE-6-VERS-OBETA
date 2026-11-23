@@ -43,11 +43,27 @@ public class MainActivity extends Activity {
             setRenderer(renderer);
             setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         }
+        private float lastX, lastY;
+        private boolean draggingCamera;
         @Override public boolean onTouchEvent(MotionEvent e) {
-            if (e.getAction() == MotionEvent.ACTION_UP) {
-                final float nx = (e.getX() / Math.max(1f, getWidth()) - .5f) * 22f;
-                final float nz = (e.getY() / Math.max(1f, getHeight()) - .5f) * 22f;
-                queueEvent(() -> renderer.setTarget(nx, -nz));
+            switch (e.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    lastX=e.getX(); lastY=e.getY(); draggingCamera=false;
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float dx=e.getX()-lastX, dy=e.getY()-lastY;
+                    if (Math.abs(dx)+Math.abs(dy)>2f) draggingCamera=true;
+                    if (draggingCamera) renderer.rotateCamera(dx,dy);
+                    lastX=e.getX(); lastY=e.getY();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                    if (!draggingCamera) {
+                        final float nx=(e.getX()/Math.max(1f,getWidth())-.5f)*34f;
+                        final float nz=(e.getY()/Math.max(1f,getHeight())-.5f)*34f;
+                        queueEvent(() -> renderer.setTarget(nx,-nz));
+                    }
+                    return true;
+                case MotionEvent.ACTION_CANCEL: return true;
             }
             return true;
         }
@@ -134,9 +150,14 @@ public class MainActivity extends Activity {
         private final float[] model = new float[16], mvp = new float[16], temp = new float[16];
         private volatile float playerX = 0, playerZ = 0, targetX = 0, targetZ = 0;
         private volatile float moveX = 0f, moveZ = 0f;
+        private volatile float cameraYaw = 0f, cameraPitch = 5.4f;
         private int width = 1, height = 1;
 
         void setMoveInput(float x, float z) { moveX = Math.max(-1f,Math.min(1f,x)); moveZ = Math.max(-1f,Math.min(1f,z)); }
+        void rotateCamera(float dx,float dy) {
+            cameraYaw += dx*0.006f;
+            cameraPitch = Math.max(3.0f,Math.min(9.0f,cameraPitch+dy*0.012f));
+        }
         void setTarget(float x, float z) {
             targetX = Math.max(-18, Math.min(18, x));
             targetZ = Math.max(-18, Math.min(18, z));
@@ -220,7 +241,10 @@ public class MainActivity extends Activity {
                 playerX += moveX*0.075f; playerZ += moveZ*0.075f;
                 targetX=playerX; targetZ=playerZ;
             } else { playerX += (targetX-playerX)*0.045f; playerZ += (targetZ-playerZ)*0.045f; }
-            Matrix.setLookAtM(view,0,playerX+4.8f,5.4f,playerZ+7.2f,playerX,0.85f,playerZ,0f,1f,0f);
+            float cameraDistance=9.0f;
+            float cameraX=playerX+(float)Math.sin(cameraYaw)*cameraDistance;
+            float cameraZ=playerZ+(float)Math.cos(cameraYaw)*cameraDistance;
+            Matrix.setLookAtM(view,0,cameraX,cameraPitch,cameraZ,playerX,0.9f,playerZ,0f,1f,0f);
             GLES20.glUseProgram(program);
             vertices.position(0);
             GLES20.glEnableVertexAttribArray(positionHandle);
@@ -228,7 +252,7 @@ public class MainActivity extends Activity {
             GLES20.glVertexAttribPointer(positionHandle,3,GLES20.GL_FLOAT,false,12,vertices);
             GLES20.glVertexAttribPointer(normalHandle,3,GLES20.GL_FLOAT,false,12,cubeNormals);
 
-            box(0,-0.28f,0,76f,0.25f,76f,0.22f,0.42f,0.25f); // expanded city terrain
+            box(0,-0.28f,0,190f,0.25f,190f,0.22f,0.42f,0.25f); // larger continuous city terrain
             // Asphalt avenues, raised sidewalks and curb edges.
             box(0,-0.12f,0,5.2f,0.04f,48f,0.16f,0.17f,0.19f);
             box(-3.05f,-0.075f,0,0.72f,0.075f,48f,0.48f,0.48f,0.45f);
@@ -239,12 +263,12 @@ public class MainActivity extends Activity {
             box(0,-0.07f,0,0.18f,0.025f,40f,0.85f,0.72f,0.35f);
             box(0,-0.07f,0,40f,0.025f,0.18f,0.85f,0.72f,0.35f);
             // Lane markings and crosswalks
-            for (int i=-4;i<=4;i++) {
+            for (int i=-6;i<=6;i++) {
                 box(i*4.2f,-0.045f,0,0.055f,0.018f,2.0f,0.92f,0.88f,0.66f);
                 box(0,-0.045f,i*4.2f,2.0f,0.018f,0.055f,0.92f,0.88f,0.66f);
             }
             // Expanded urban grid: varied towers, apartments and commercial blocks
-            for (int x=-4;x<=4;x++) for (int z=-4;z<=4;z++) {
+            for (int x=-6;x<=6;x++) for (int z=-6;z<=6;z++) {
                 if (Math.abs(x)<=1 || Math.abs(z)<=1) continue;
                 float bx=x*8.4f, bz=z*8.4f;
                 float bh=3.0f + ((x*x+z*z+x*3+z*5)&3)*1.18f;
@@ -253,18 +277,18 @@ public class MainActivity extends Activity {
                 building(bx,bz,bw,bh,style);
             }
             // Secondary boulevards create distinct city districts
-            for (int road=-2;road<=2;road++) {
+            for (int road=-4;road<=4;road++) {
                 if (road==0) continue;
                 float lane=road*14.5f;
-                box(lane,-0.115f,0,2.5f,0.045f,70f,0.18f,0.19f,0.21f);
-                box(0,-0.115f,lane,70f,0.045f,2.5f,0.18f,0.19f,0.21f);
-                for(int mark=-6;mark<=6;mark++) {
+                box(lane,-0.115f,0,2.5f,0.045f,180f,0.18f,0.19f,0.21f);
+                box(0,-0.115f,lane,180f,0.045f,2.5f,0.18f,0.19f,0.21f);
+                for(int mark=-16;mark<=16;mark++) {
                     box(lane,-0.055f,mark*5.0f,0.045f,0.012f,1.6f,0.88f,0.82f,0.64f);
                     box(mark*5.0f,-0.055f,lane,1.6f,0.012f,0.045f,0.88f,0.82f,0.64f);
                 }
             }
             // Trees around the blocks
-            for (int i=-4;i<=4;i++) {
+            for (int i=-6;i<=6;i++) {
                 tree(i*8.4f+2.1f, -5.2f);
                 tree(i*8.4f-2.1f, 5.2f);
             }
