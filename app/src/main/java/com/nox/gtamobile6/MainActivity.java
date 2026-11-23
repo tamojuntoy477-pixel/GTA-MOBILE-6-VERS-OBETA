@@ -6,6 +6,10 @@ import android.opengl.GLSurfaceView;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 import android.view.MotionEvent;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Color;
+import android.widget.FrameLayout;
 import android.view.View;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,14 +25,16 @@ public class MainActivity extends Activity {
              View.SYSTEM_UI_FLAG_FULLSCREEN | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION |
              View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
         game = new GameView(this);
-        setContentView(game);
+        FrameLayout root = new FrameLayout(this);
+        root.addView(game, new FrameLayout.LayoutParams(-1, -1));
+        root.addView(new JoystickOverlay(this, game.renderer), new FrameLayout.LayoutParams(-1, -1));
+        setContentView(root);
     }
     @Override protected void onPause() { super.onPause(); if (game != null) game.onPause(); }
     @Override protected void onResume() { super.onResume(); if (game != null) game.onResume(); }
 
     static class GameView extends GLSurfaceView {
         final CityRenderer renderer;
-        float downX, downY;
         GameView(Activity a) {
             super(a);
             setEGLContextClientVersion(2);
@@ -38,16 +44,73 @@ public class MainActivity extends Activity {
             setRenderMode(GLSurfaceView.RENDERMODE_CONTINUOUSLY);
         }
         @Override public boolean onTouchEvent(MotionEvent e) {
-            if (e.getAction() == MotionEvent.ACTION_DOWN) {
-                downX = e.getX(); downY = e.getY(); return true;
-            }
             if (e.getAction() == MotionEvent.ACTION_UP) {
                 final float nx = (e.getX() / Math.max(1f, getWidth()) - .5f) * 22f;
                 final float nz = (e.getY() / Math.max(1f, getHeight()) - .5f) * 22f;
                 queueEvent(() -> renderer.setTarget(nx, -nz));
-                return true;
             }
             return true;
+        }
+    }
+
+    static class JoystickOverlay extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        private final CityRenderer renderer;
+        private float cx, cy, knobX, knobY, radius;
+        private boolean active = false;
+        JoystickOverlay(Activity a, CityRenderer renderer) {
+            super(a);
+            this.renderer = renderer;
+            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
+        }
+        private void layoutStick() {
+            float d = getResources().getDisplayMetrics().density;
+            radius = 65f*d;
+            cx = 24f*d + radius;
+            cy = getHeight() - (24f*d + radius);
+            if (!active) { knobX = cx; knobY = cy; }
+        }
+        @Override protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            layoutStick();
+            paint.setColor(Color.argb(65, 15, 20, 28));
+            canvas.drawCircle(cx, cy, radius, paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(3f);
+            paint.setColor(Color.argb(155, 235, 240, 245));
+            canvas.drawCircle(cx, cy, radius, paint);
+            paint.setStyle(Paint.Style.FILL);
+            paint.setColor(Color.argb(165, 55, 105, 175));
+            canvas.drawCircle(knobX, knobY, radius*0.43f, paint);
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(2f);
+            paint.setColor(Color.argb(210, 235, 240, 250));
+            canvas.drawCircle(knobX, knobY, radius*0.43f, paint);
+            paint.setStyle(Paint.Style.FILL);
+        }
+        @Override public boolean onTouchEvent(MotionEvent event) {
+            if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                layoutStick();
+                if (event.getX() > cx + radius*1.35f || event.getY() < cy - radius*1.35f) return false;
+                active = true;
+            }
+            if (active && (event.getAction()==MotionEvent.ACTION_MOVE || event.getAction()==MotionEvent.ACTION_DOWN)) {
+                float dx=event.getX()-cx, dy=event.getY()-cy;
+                float len=(float)Math.sqrt(dx*dx+dy*dy);
+                float limit=radius*0.78f;
+                if(len>limit) { dx=dx/len*limit; dy=dy/len*limit; }
+                knobX=cx+dx; knobY=cy+dy;
+                renderer.setMoveInput(dx/limit, -dy/limit);
+                invalidate();
+                return true;
+            }
+            if (active && (event.getAction()==MotionEvent.ACTION_UP || event.getAction()==MotionEvent.ACTION_CANCEL)) {
+                active=false; knobX=cx; knobY=cy;
+                renderer.setMoveInput(0f,0f);
+                invalidate();
+                return true;
+            }
+            return active;
         }
     }
 
@@ -70,8 +133,10 @@ public class MainActivity extends Activity {
         private final float[] projection = new float[16], view = new float[16];
         private final float[] model = new float[16], mvp = new float[16], temp = new float[16];
         private volatile float playerX = 0, playerZ = 0, targetX = 0, targetZ = 0;
+        private volatile float moveX = 0f, moveZ = 0f;
         private int width = 1, height = 1;
 
+        void setMoveInput(float x, float z) { moveX = Math.max(-1f,Math.min(1f,x)); moveZ = Math.max(-1f,Math.min(1f,z)); }
         void setTarget(float x, float z) {
             targetX = Math.max(-18, Math.min(18, x));
             targetZ = Math.max(-18, Math.min(18, z));
@@ -151,8 +216,10 @@ public class MainActivity extends Activity {
         }
         @Override public void onDrawFrame(GL10 gl) {
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
-            playerX += (targetX-playerX)*0.045f;
-            playerZ += (targetZ-playerZ)*0.045f;
+            if (Math.abs(moveX)+Math.abs(moveZ)>0.05f) {
+                playerX += moveX*0.075f; playerZ += moveZ*0.075f;
+                targetX=playerX; targetZ=playerZ;
+            } else { playerX += (targetX-playerX)*0.045f; playerZ += (targetZ-playerZ)*0.045f; }
             Matrix.setLookAtM(view,0,playerX+8f,8.5f,playerZ+11f,playerX,0f,playerZ,0f,1f,0f);
             GLES20.glUseProgram(program);
             vertices.position(0);
@@ -295,7 +362,7 @@ public class MainActivity extends Activity {
             float stride=(float)Math.sin(phase);
             float opposite=-stride;
             float travel=(float)Math.hypot(targetX-playerX,targetZ-playerZ);
-            float moving=Math.min(1f,travel*0.48f);
+            float moving=Math.max(Math.min(1f,travel*0.48f),Math.min(1f,(Math.abs(moveX)+Math.abs(moveZ))*0.65f));
             float idleBreath=(float)Math.sin(phase*0.48f)*0.012f;
             float bob=Math.abs(stride)*0.055f*moving+idleBreath;
             float armSwing=stride*0.27f*moving;
@@ -317,6 +384,8 @@ public class MainActivity extends Activity {
             // Jacket, chest panels and collar.
             sphere(x,1.16f+bob,z,0.315f,0.33f+idleBreath,0.19f,jacketR,jacketG,jacketB);
             sphere(x,1.36f+bob,z+0.005f,0.335f,0.155f,0.19f,0.10f,0.25f,0.62f);
+            sphere(x,1.13f+bob,z-0.195f,0.055f,0.065f,0.018f,0.78f,0.79f,0.82f);
+            sphere(x,0.94f+bob,z-0.165f,0.25f,0.045f,0.025f,0.045f,0.055f,0.075f);
             sphere(x-0.105f,1.19f+bob,z-0.181f,0.018f,0.24f,0.018f,0.20f,0.30f,0.58f);
             sphere(x+0.105f,1.19f+bob,z-0.181f,0.018f,0.24f,0.018f,0.20f,0.30f,0.58f);
             sphere(x,1.46f+bob,z-0.005f,0.115f,0.105f,0.12f,0.82f,0.80f,0.72f);
@@ -325,8 +394,10 @@ public class MainActivity extends Activity {
             // Arms swing in opposition to the legs, with elbows and hands.
             sphere(x-0.335f,1.34f+bob,z,0.155f,0.17f,0.155f,jacketR,jacketG,jacketB);
             sphere(x+0.335f,1.34f+bob,z,0.155f,0.17f,0.155f,jacketR,jacketG,jacketB);
-            sphere(x-0.405f-armSwing*0.35f,1.19f+bob,z-armSwing*0.45f,0.115f,0.19f,0.115f,0.085f,0.21f,0.56f);
-            sphere(x+0.405f+armSwing*0.35f,1.19f+bob,z+armSwing*0.45f,0.115f,0.19f,0.115f,0.085f,0.21f,0.56f);
+            sphere(x-0.405f-armSwing*0.35f,1.19f+bob,z-armSwing*0.45f,0.105f,0.17f,0.105f,0.085f,0.21f,0.56f);
+            sphere(x+0.405f+armSwing*0.35f,1.19f+bob,z+armSwing*0.45f,0.105f,0.17f,0.105f,0.085f,0.21f,0.56f);
+            sphere(x-0.42f-armSwing*0.7f,1.04f+bob,z-armSwing*0.7f,0.095f,0.13f,0.095f,0.075f,0.18f,0.48f);
+            sphere(x+0.42f+armSwing*0.7f,1.04f+bob,z+armSwing*0.7f,0.095f,0.13f,0.095f,0.075f,0.18f,0.48f);
             sphere(x-0.435f-armSwing,0.99f+bob,z-armSwing,0.09f,0.17f,0.095f,skinR,skinG,skinB);
             sphere(x+0.435f+armSwing,0.99f+bob,z+armSwing,0.09f,0.17f,0.095f,skinR,skinG,skinB);
             sphere(x-0.445f-armSwing,0.82f+bob,z-armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
@@ -334,10 +405,11 @@ public class MainActivity extends Activity {
 
             // Neck, head, ears, hair and facial details.
             sphere(x,1.55f+bob,z,0.09f,0.13f,0.09f,skinR,skinG,skinB);
-            sphere(x,1.78f+bob,z,0.185f,0.245f,0.175f,skinR,skinG,skinB);
+            sphere(x,1.78f+bob,z,0.17f,0.225f,0.165f,skinR,skinG,skinB);
             sphere(x-0.184f,1.77f+bob,z,0.045f,0.07f,0.045f,skinR,skinG,skinB);
             sphere(x+0.184f,1.77f+bob,z,0.045f,0.07f,0.045f,skinR,skinG,skinB);
-            sphere(x,1.965f+bob,z+0.005f,0.19f,0.085f,0.18f,0.035f,0.025f,0.02f);
+            sphere(x,1.955f+bob,z+0.005f,0.18f,0.075f,0.17f,0.035f,0.025f,0.02f);
+            sphere(x,1.91f+bob,z-0.09f,0.13f,0.065f,0.095f,0.035f,0.025f,0.02f);
             sphere(x-0.15f,1.87f+bob,z+0.015f,0.055f,0.13f,0.15f,0.035f,0.025f,0.02f);
             sphere(x+0.15f,1.87f+bob,z+0.015f,0.055f,0.13f,0.15f,0.035f,0.025f,0.02f);
             sphere(x-0.075f,1.805f+bob,z-0.157f,0.022f,0.018f,0.014f,0.025f,0.02f,0.018f);
