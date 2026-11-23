@@ -53,9 +53,9 @@ public class MainActivity extends Activity {
 
     static class CityRenderer implements GLSurfaceView.Renderer {
         private static final String VS =
-            "uniform mat4 uMVP; attribute vec3 aPosition; void main(){ gl_Position=uMVP*vec4(aPosition,1.0); }";
+            "uniform mat4 uMVP; uniform mat4 uModel; attribute vec3 aPosition; attribute vec3 aNormal; varying vec3 vNormal; varying float vDepth; void main(){ vec4 p=uMVP*vec4(aPosition,1.0); gl_Position=p; vNormal=normalize(mat3(uModel)*aNormal); vDepth=abs(p.z/p.w); }";
         private static final String FS =
-            "precision mediump float; uniform vec4 uColor; void main(){ gl_FragColor=uColor; }";
+            "precision mediump float; uniform vec4 uColor; varying vec3 vNormal; varying float vDepth; void main(){ vec3 n=normalize(vNormal); vec3 light=normalize(vec3(-0.42,0.82,0.36)); float diffuse=max(dot(n,light),0.0); float hemi=0.30+0.22*max(n.y,0.0); float shade=clamp(hemi+diffuse*0.62,0.28,1.0); vec3 lit=uColor.rgb*shade; float fog= smoothstep(0.72,0.995,vDepth); vec3 sky=vec3(0.53,0.70,0.82); gl_FragColor=vec4(mix(lit,sky,fog*0.58),uColor.a); }";
         private final float[] cube = {
             -1,-1,1, 1,-1,1, 1,1,1, -1,-1,1, 1,1,1, -1,1,1,
             1,-1,-1, -1,-1,-1, -1,1,-1, 1,-1,-1, -1,1,-1, 1,1,-1,
@@ -64,9 +64,9 @@ public class MainActivity extends Activity {
             -1,1,1, 1,1,1, 1,1,-1, -1,1,1, 1,1,-1, -1,1,-1,
             -1,-1,-1, 1,-1,-1, 1,-1,1, -1,-1,-1, 1,-1,1, -1,-1,1
         };
-        private FloatBuffer vertices, sphereVertices;
+        private FloatBuffer vertices, sphereVertices, cubeNormals;
         private int sphereVertexCount;
-        private int program, positionHandle, mvpHandle, colorHandle;
+        private int program, positionHandle, normalHandle, mvpHandle, modelHandle, colorHandle;
         private final float[] projection = new float[16], view = new float[16];
         private final float[] model = new float[16], mvp = new float[16], temp = new float[16];
         private volatile float playerX = 0, playerZ = 0, targetX = 0, targetZ = 0;
@@ -82,6 +82,14 @@ public class MainActivity extends Activity {
             GLES20.glEnable(GLES20.GL_CULL_FACE);
             ByteBuffer bb = ByteBuffer.allocateDirect(cube.length * 4).order(ByteOrder.nativeOrder());
             vertices = bb.asFloatBuffer(); vertices.put(cube).position(0);
+            float[] faceNormals = new float[108];
+            float[][] dirs = {{0,0,1},{0,0,-1},{-1,0,0},{1,0,0},{0,1,0},{0,-1,0}};
+            for (int face=0; face<6; face++) for (int vertex=0; vertex<6; vertex++) {
+                int k=(face*6+vertex)*3;
+                faceNormals[k]=dirs[face][0]; faceNormals[k+1]=dirs[face][1]; faceNormals[k+2]=dirs[face][2];
+            }
+            ByteBuffer nb=ByteBuffer.allocateDirect(faceNormals.length*4).order(ByteOrder.nativeOrder());
+            cubeNormals=nb.asFloatBuffer(); cubeNormals.put(faceNormals).position(0);
             sphereVertices = buildSphere(24, 32);
             sphereVertexCount = sphereVertices.limit() / 3;
             int v = shader(GLES20.GL_VERTEX_SHADER, VS);
@@ -90,7 +98,9 @@ public class MainActivity extends Activity {
             GLES20.glAttachShader(program, v); GLES20.glAttachShader(program, f);
             GLES20.glLinkProgram(program);
             positionHandle = GLES20.glGetAttribLocation(program, "aPosition");
+            normalHandle = GLES20.glGetAttribLocation(program, "aNormal");
             mvpHandle = GLES20.glGetUniformLocation(program, "uMVP");
+            modelHandle = GLES20.glGetUniformLocation(program, "uModel");
             colorHandle = GLES20.glGetUniformLocation(program, "uColor");
         }
         private FloatBuffer buildSphere(int stacks, int slices) {
@@ -123,9 +133,11 @@ public class MainActivity extends Activity {
             Matrix.multiplyMM(temp,0,view,0,model,0);
             Matrix.multiplyMM(mvp,0,projection,0,temp,0);
             GLES20.glUniformMatrix4fv(mvpHandle,1,false,mvp,0);
+            GLES20.glUniformMatrix4fv(modelHandle,1,false,model,0);
             GLES20.glUniform4f(colorHandle,r,g,b,1f);
             sphereVertices.position(0);
             GLES20.glVertexAttribPointer(positionHandle,3,GLES20.GL_FLOAT,false,12,sphereVertices);
+            GLES20.glVertexAttribPointer(normalHandle,3,GLES20.GL_FLOAT,false,12,sphereVertices);
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,sphereVertexCount);
         }
         private int shader(int type, String source) {
@@ -145,7 +157,9 @@ public class MainActivity extends Activity {
             GLES20.glUseProgram(program);
             vertices.position(0);
             GLES20.glEnableVertexAttribArray(positionHandle);
+            GLES20.glEnableVertexAttribArray(normalHandle);
             GLES20.glVertexAttribPointer(positionHandle,3,GLES20.GL_FLOAT,false,12,vertices);
+            GLES20.glVertexAttribPointer(normalHandle,3,GLES20.GL_FLOAT,false,12,cubeNormals);
 
             box(0,-0.28f,0,76f,0.25f,76f,0.22f,0.42f,0.25f); // expanded city terrain
             // Asphalt avenues and sidewalks
@@ -208,6 +222,7 @@ public class MainActivity extends Activity {
             // Detailed original player avatar: jacket, shirt, trousers, shoes, hair and face
             drawPlayer(playerX,playerZ);
             GLES20.glDisableVertexAttribArray(positionHandle);
+            GLES20.glDisableVertexAttribArray(normalHandle);
         }
         private void trafficCar(float x,float y,float z,float r,float g,float b) {
             box(x,y,z,0.62f,0.24f,1.05f,r,g,b);
@@ -300,9 +315,11 @@ public class MainActivity extends Activity {
             Matrix.multiplyMM(temp,0,view,0,model,0);
             Matrix.multiplyMM(mvp,0,projection,0,temp,0);
             GLES20.glUniformMatrix4fv(mvpHandle,1,false,mvp,0);
+            GLES20.glUniformMatrix4fv(modelHandle,1,false,model,0);
             GLES20.glUniform4f(colorHandle,r,g,b,1f);
-            vertices.position(0);
+            vertices.position(0); cubeNormals.position(0);
             GLES20.glVertexAttribPointer(positionHandle,3,GLES20.GL_FLOAT,false,12,vertices);
+            GLES20.glVertexAttribPointer(normalHandle,3,GLES20.GL_FLOAT,false,12,cubeNormals);
             GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,36);
         }
     }
