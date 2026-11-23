@@ -226,19 +226,32 @@ public class MainActivity extends Activity {
             GLES20.glDisableVertexAttribArray(normalHandle);
         }
         private void trafficCar(float x,float y,float z,float r,float g,float b) {
-            // Original compact street car with curved wheel volumes and layered body.
-            box(x,y,z,0.66f,0.22f,1.12f,r,g,b);
-            box(x,y+0.20f,z-0.08f,0.48f,0.22f,0.58f,r*0.82f,g*0.82f,b*0.82f);
-            box(x,y+0.22f,z-0.08f,0.40f,0.16f,0.49f,0.12f,0.23f,0.30f);
-            box(x,y+0.22f,z+0.39f,0.40f,0.15f,0.22f,0.12f,0.20f,0.26f);
-            box(x-0.48f,y+0.02f,z-1.13f,0.12f,0.07f,0.035f,0.96f,0.88f,0.64f);
-            box(x+0.48f,y+0.02f,z-1.13f,0.12f,0.07f,0.035f,0.96f,0.88f,0.64f);
-            box(x-0.48f,y+0.02f,z+1.13f,0.12f,0.07f,0.035f,0.80f,0.10f,0.07f);
-            box(x+0.48f,y+0.02f,z+1.13f,0.12f,0.07f,0.035f,0.80f,0.10f,0.07f);
-            sphere(x-0.49f,y-0.12f,z-0.68f,0.18f,0.18f,0.18f,0.045f,0.047f,0.052f);
-            sphere(x+0.49f,y-0.12f,z-0.68f,0.18f,0.18f,0.18f,0.045f,0.047f,0.052f);
-            sphere(x-0.49f,y-0.12f,z+0.68f,0.18f,0.18f,0.18f,0.045f,0.047f,0.052f);
-            sphere(x+0.49f,y-0.12f,z+0.68f,0.18f,0.18f,0.18f,0.045f,0.047f,0.052f);
+            // Original compact car with layered bodywork, windows, lights and animated rolling wheels.
+            box(x,y,z,0.68f,0.20f,1.16f,r,g,b);
+            box(x,y+0.15f,z+0.02f,0.63f,0.10f,0.82f,r*0.78f,g*0.78f,b*0.78f);
+            box(x,y+0.28f,z-0.10f,0.49f,0.22f,0.62f,0.10f,0.16f,0.21f);
+            box(x,y+0.29f,z-0.10f,0.42f,0.16f,0.54f,0.24f,0.43f,0.49f);
+            box(x,y+0.28f,z+0.43f,0.49f,0.20f,0.27f,0.10f,0.16f,0.21f);
+            // Front/rear bumpers and lamps.
+            box(x,y-0.02f,z-1.17f,0.62f,0.075f,0.09f,0.13f,0.14f,0.15f);
+            box(x,y-0.02f,z+1.17f,0.62f,0.075f,0.09f,0.13f,0.14f,0.15f);
+            box(x-0.48f,y+0.015f,z-1.19f,0.13f,0.075f,0.035f,1.0f,0.88f,0.65f);
+            box(x+0.48f,y+0.015f,z-1.19f,0.13f,0.075f,0.035f,1.0f,0.88f,0.65f);
+            box(x-0.48f,y+0.015f,z+1.19f,0.13f,0.075f,0.035f,0.88f,0.08f,0.06f);
+            box(x+0.48f,y+0.015f,z+1.19f,0.13f,0.075f,0.035f,0.88f,0.08f,0.06f);
+            // Side windows, door seams and mirrors.
+            for(int side=-1;side<=1;side+=2) {
+                box(x+side*0.665f,y+0.27f,z-0.10f,0.025f,0.15f,0.31f,0.20f,0.36f,0.43f);
+                box(x+side*0.69f,y+0.22f,z+0.35f,0.045f,0.065f,0.12f,0.12f,0.14f,0.16f);
+                box(x+side*0.69f,y+0.04f,z+0.02f,0.018f,0.11f,0.012f,0.10f,0.11f,0.12f);
+                // Rubber tires and metallic hubs at each axle.
+                for(int axle=-1;axle<=1;axle+=2) {
+                    float wz=z+axle*0.72f;
+                    box(x+side*0.61f,y-0.105f,wz,0.105f,0.17f,0.19f,0.035f,0.038f,0.042f);
+                    sphere(x+side*0.72f,y-0.105f,wz,0.055f,0.085f,0.085f,0.48f,0.50f,0.52f);
+                    sphere(x+side*0.755f,y-0.105f,wz,0.022f,0.035f,0.035f,0.16f,0.17f,0.18f);
+                }
+            }
             box(x,y-0.005f,z-0.02f,0.08f,0.012f,0.84f,0.78f,0.78f,0.72f);
         }
         private void building(float x,float z,float w,float h,int style) {
@@ -277,62 +290,64 @@ public class MainActivity extends Activity {
             box(x,0.50f,z-d*0.56f,0.36f,0.34f,0.035f,0.16f,0.35f,0.39f);
         }
         private void drawPlayer(float x,float z) {
-            // Original rounded humanoid avatar. Front faces -Z.
-            float phase = (float)(System.nanoTime()*0.0000000035);
-            float stride = (float)Math.sin(phase);
-            float opposite = (float)Math.sin(phase + Math.PI);
-            float moving = Math.min(1f, (float)(Math.hypot(targetX-playerX,targetZ-playerZ)*0.35));
-            float bob = Math.abs(stride)*0.035f*moving;
-            float armSwing = stride*0.16f*moving;
-            float legSwing = stride*0.13f*moving;
-            float skinR=0.58f, skinG=0.34f, skinB=0.22f;
-            float jacketR=0.075f, jacketG=0.19f, jacketB=0.52f;
-            float pantsR=0.105f, pantsG=0.13f, pantsB=0.19f;
+            // Procedural humanoid with a smoother walk cycle, separate joints and idle breathing.
+            float phase=(float)(System.nanoTime()*0.0000000048);
+            float stride=(float)Math.sin(phase);
+            float opposite=-stride;
+            float travel=(float)Math.hypot(targetX-playerX,targetZ-playerZ);
+            float moving=Math.min(1f,travel*0.48f);
+            float idleBreath=(float)Math.sin(phase*0.48f)*0.012f;
+            float bob=Math.abs(stride)*0.055f*moving+idleBreath;
+            float armSwing=stride*0.27f*moving;
+            float legSwing=stride*0.22f*moving;
+            float skinR=0.58f,skinG=0.34f,skinB=0.22f;
+            float jacketR=0.075f,jacketG=0.19f,jacketB=0.52f;
+            float pantsR=0.105f,pantsG=0.13f,pantsB=0.19f;
 
-            // Shoes, legs and knees. Ellipsoids keep the silhouette rounded.
-            sphere(x-0.145f,0.105f+bob,z-0.075f+legSwing*0.25f,0.15f,0.09f,0.245f,0.035f,0.04f,0.055f);
-            sphere(x+0.145f,0.105f+bob,z-0.075f-legSwing*0.25f,0.15f,0.09f,0.245f,0.035f,0.04f,0.055f);
-            sphere(x-0.145f,0.34f+bob,z+legSwing*0.25f,0.095f,0.235f,0.105f,0.16f,0.18f,0.22f);
-            sphere(x+0.145f,0.34f+bob,z-legSwing*0.25f,0.095f,0.235f,0.105f,0.16f,0.18f,0.22f);
-            sphere(x-0.145f,0.66f+bob+legSwing,z,0.125f,0.245f,0.14f,pantsR,pantsG,pantsB);
-            sphere(x+0.145f,0.66f+bob-legSwing,z,0.125f,0.245f,0.14f,pantsR,pantsG,pantsB);
+            // Shoes follow the alternating stride instead of sliding in place.
+            sphere(x-0.145f,0.105f+bob,z-0.11f+legSwing*0.72f,0.15f,0.09f,0.25f,0.035f,0.04f,0.055f);
+            sphere(x+0.145f,0.105f+bob,z-0.11f-legSwing*0.72f,0.15f,0.09f,0.25f,0.035f,0.04f,0.055f);
+            // Lower legs and knees.
+            sphere(x-0.145f,0.34f+bob,z+legSwing*0.36f,0.105f,0.22f,0.11f,0.16f,0.18f,0.22f);
+            sphere(x+0.145f,0.34f+bob,z-legSwing*0.36f,0.105f,0.22f,0.11f,0.16f,0.18f,0.22f);
+            sphere(x-0.145f,0.66f+bob+legSwing,z+legSwing*0.18f,0.13f,0.24f,0.14f,pantsR,pantsG,pantsB);
+            sphere(x+0.145f,0.66f+bob-legSwing,z-legSwing*0.18f,0.13f,0.24f,0.14f,pantsR,pantsG,pantsB);
             sphere(x,0.91f+bob,z,0.255f,0.19f,0.16f,0.09f,0.15f,0.36f);
 
-            // Torso, chest, jacket panels and collar.
-            sphere(x,1.16f+bob,z,0.315f,0.33f,0.19f,jacketR,jacketG,jacketB);
+            // Jacket, chest panels and collar.
+            sphere(x,1.16f+bob,z,0.315f,0.33f+idleBreath,0.19f,jacketR,jacketG,jacketB);
             sphere(x,1.36f+bob,z+0.005f,0.335f,0.155f,0.19f,0.10f,0.25f,0.62f);
             sphere(x-0.105f,1.19f+bob,z-0.181f,0.018f,0.24f,0.018f,0.20f,0.30f,0.58f);
             sphere(x+0.105f,1.19f+bob,z-0.181f,0.018f,0.24f,0.018f,0.20f,0.30f,0.58f);
             sphere(x,1.46f+bob,z-0.005f,0.115f,0.105f,0.12f,0.82f,0.80f,0.72f);
             sphere(x,1.49f+bob,z+0.012f,0.105f,0.07f,0.105f,skinR,skinG,skinB);
 
-            // Shoulders, upper arms, elbows, forearms and hands.
+            // Arms swing in opposition to the legs, with elbows and hands.
             sphere(x-0.335f,1.34f+bob,z,0.155f,0.17f,0.155f,jacketR,jacketG,jacketB);
             sphere(x+0.335f,1.34f+bob,z,0.155f,0.17f,0.155f,jacketR,jacketG,jacketB);
-            sphere(x-0.405f,1.19f+bob,z-armSwing*0.35f,0.115f,0.19f,0.115f,0.085f,0.21f,0.56f);
-            sphere(x+0.405f,1.19f+bob,z+armSwing*0.35f,0.115f,0.19f,0.115f,0.085f,0.21f,0.56f);
-            sphere(x-0.435f,0.99f+bob,z-armSwing,0.09f,0.17f,0.095f,skinR,skinG,skinB);
-            sphere(x+0.435f,0.99f+bob,z+armSwing,0.09f,0.17f,0.095f,skinR,skinG,skinB);
-            sphere(x-0.445f,0.82f+bob,z-armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
-            sphere(x+0.445f,0.82f+bob,z+armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
+            sphere(x-0.405f-armSwing*0.35f,1.19f+bob,z-armSwing*0.45f,0.115f,0.19f,0.115f,0.085f,0.21f,0.56f);
+            sphere(x+0.405f+armSwing*0.35f,1.19f+bob,z+armSwing*0.45f,0.115f,0.19f,0.115f,0.085f,0.21f,0.56f);
+            sphere(x-0.435f-armSwing,0.99f+bob,z-armSwing,0.09f,0.17f,0.095f,skinR,skinG,skinB);
+            sphere(x+0.435f+armSwing,0.99f+bob,z+armSwing,0.09f,0.17f,0.095f,skinR,skinG,skinB);
+            sphere(x-0.445f-armSwing,0.82f+bob,z-armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
+            sphere(x+0.445f+armSwing,0.82f+bob,z+armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
 
-            // Neck, head, ears and a defined face.
+            // Neck, head, ears, hair and facial details.
             sphere(x,1.55f+bob,z,0.09f,0.13f,0.09f,skinR,skinG,skinB);
             sphere(x,1.78f+bob,z,0.185f,0.245f,0.175f,skinR,skinG,skinB);
             sphere(x-0.184f,1.77f+bob,z,0.045f,0.07f,0.045f,skinR,skinG,skinB);
             sphere(x+0.184f,1.77f+bob,z,0.045f,0.07f,0.045f,skinR,skinG,skinB);
-            // Hair cap and side hair.
             sphere(x,1.965f+bob,z+0.005f,0.19f,0.085f,0.18f,0.035f,0.025f,0.02f);
             sphere(x-0.15f,1.87f+bob,z+0.015f,0.055f,0.13f,0.15f,0.035f,0.025f,0.02f);
             sphere(x+0.15f,1.87f+bob,z+0.015f,0.055f,0.13f,0.15f,0.035f,0.025f,0.02f);
-            // Eyes, brows, nose and mouth on the front plane.
             sphere(x-0.075f,1.805f+bob,z-0.157f,0.022f,0.018f,0.014f,0.025f,0.02f,0.018f);
             sphere(x+0.075f,1.805f+bob,z-0.157f,0.022f,0.018f,0.014f,0.025f,0.02f,0.018f);
             sphere(x-0.075f,1.845f+bob,z-0.155f,0.045f,0.012f,0.018f,0.045f,0.03f,0.025f);
             sphere(x+0.075f,1.845f+bob,z-0.155f,0.045f,0.012f,0.018f,0.045f,0.03f,0.025f);
             sphere(x,1.735f+bob,z-0.181f,0.027f,0.045f,0.028f,0.48f,0.25f,0.16f);
             sphere(x,1.675f+bob,z-0.165f,0.043f,0.009f,0.012f,0.20f,0.045f,0.04f);
-            // Backpack and seams.
+
+            // Backpack and shoulder straps.
             sphere(x,1.13f+bob,z+0.205f,0.19f,0.25f,0.075f,0.045f,0.055f,0.075f);
             sphere(x-0.24f,1.12f+bob,z+0.08f,0.035f,0.19f,0.045f,0.055f,0.10f,0.28f);
             sphere(x+0.24f,1.12f+bob,z+0.08f,0.035f,0.19f,0.045f,0.055f,0.10f,0.28f);
