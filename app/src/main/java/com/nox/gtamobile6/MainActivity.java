@@ -218,31 +218,50 @@ public class MainActivity extends Activity {
             box(x+0.42f,y-0.12f,z+0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
         }
         private void drawPlayer(float x,float z) {
-            float bob = (float)Math.sin(System.nanoTime()*0.000000006)*0.035f;
-            box(x,0.82f+bob,z,0.34f,0.48f,0.23f,0.10f,0.24f,0.72f); // blue jacket
-            box(x,0.84f+bob,z-0.235f,0.15f,0.30f,0.025f,0.90f,0.90f,0.86f); // shirt
-            box(x-0.43f,0.82f+bob,z,0.12f,0.38f,0.13f,0.10f,0.24f,0.72f);
-            box(x+0.43f,0.82f+bob,z,0.12f,0.38f,0.13f,0.10f,0.24f,0.72f);
-            box(x-0.43f,0.55f+bob,z,0.11f,0.12f,0.12f,0.72f,0.48f,0.32f);
-            box(x+0.43f,0.55f+bob,z,0.11f,0.12f,0.12f,0.72f,0.48f,0.32f);
-            box(x-0.17f,0.30f+bob,z,0.14f,0.30f,0.15f,0.12f,0.15f,0.22f);
-            box(x+0.17f,0.30f+bob,z,0.14f,0.30f,0.15f,0.12f,0.15f,0.22f);
-            box(x-0.17f,0.055f+bob,z-0.04f,0.17f,0.09f,0.25f,0.045f,0.05f,0.06f);
-            box(x+0.17f,0.055f+bob,z-0.04f,0.17f,0.09f,0.25f,0.045f,0.05f,0.06f);
-            // Rounded head and facial features replace the old cube head.
-            sphere(x,1.49f+bob,z,0.235f,0.29f,0.22f,0.72f,0.48f,0.32f);
-            sphere(x,1.70f+bob,z+0.015f,0.245f,0.105f,0.23f,0.075f,0.048f,0.035f); // hair cap
-            sphere(x-0.235f,1.48f+bob,z,0.055f,0.085f,0.055f,0.68f,0.43f,0.29f); // ear
-            sphere(x+0.235f,1.48f+bob,z,0.055f,0.085f,0.055f,0.68f,0.43f,0.29f);
-            sphere(x-0.085f,1.515f+bob,z-0.195f,0.027f,0.027f,0.018f,0.035f,0.035f,0.035f); // eyes
-            sphere(x+0.085f,1.515f+bob,z-0.195f,0.027f,0.027f,0.018f,0.035f,0.035f,0.035f);
-            sphere(x,1.455f+bob,z-0.222f,0.035f,0.045f,0.035f,0.60f,0.37f,0.25f); // nose
-            sphere(x,1.395f+bob,z-0.205f,0.065f,0.012f,0.018f,0.25f,0.08f,0.07f); // mouth
-            box(x-0.29f,0.94f+bob,z+0.02f,0.10f,0.30f,0.18f,0.06f,0.12f,0.38f); // jacket side detail
-            box(x+0.29f,0.94f+bob,z+0.02f,0.10f,0.30f,0.18f,0.06f,0.12f,0.38f);
-            box(x,1.17f+bob,z+0.25f,0.22f,0.25f,0.08f,0.08f,0.10f,0.13f); // backpack
-            box(x-0.09f,1.50f+bob,z-0.205f,0.035f,0.035f,0.025f,0.04f,0.04f,0.04f);
-            box(x+0.09f,1.50f+bob,z-0.205f,0.035f,0.035f,0.025f,0.04f,0.04f,0.04f);
+            // Organic, rounded human silhouette built from overlapping ellipsoids.
+            // Front of the character faces toward -Z.
+            float walk = (float)Math.sin(System.nanoTime()*0.000000004);
+            float bob = Math.abs(walk)*0.025f;
+            float legSwing = walk*0.07f;
+            float skinR=0.64f, skinG=0.39f, skinB=0.25f;
+            float jacketR=0.10f, jacketG=0.24f, jacketB=0.68f;
+
+            // Shoes, calves and thighs: no rectangular body parts.
+            sphere(x-0.16f,0.10f+bob,z-0.055f,0.145f,0.095f,0.245f,0.045f,0.05f,0.065f);
+            sphere(x+0.16f,0.10f+bob,z-0.055f,0.145f,0.095f,0.245f,0.045f,0.05f,0.065f);
+            sphere(x-0.16f,0.34f+bob,z,0.105f,0.25f,0.115f,0.12f,0.15f,0.22f);
+            sphere(x+0.16f,0.34f+bob,z,0.105f,0.25f,0.115f,0.12f,0.15f,0.22f);
+            sphere(x-0.16f,0.67f+bob+legSwing,z,0.14f,0.25f,0.15f,0.13f,0.16f,0.24f);
+            sphere(x+0.16f,0.67f+bob-legSwing,z,0.14f,0.25f,0.15f,0.13f,0.16f,0.24f);
+
+            // Pelvis, waist, chest and shoulders form a continuous human torso.
+            sphere(x,0.91f+bob,z,0.285f,0.22f,0.17f,0.09f,0.18f,0.48f);
+            sphere(x,1.17f+bob,z,0.34f,0.34f,0.205f,jacketR,jacketG,jacketB);
+            sphere(x,1.36f+bob,z,0.365f,0.17f,0.205f,0.12f,0.27f,0.72f);
+            sphere(x,1.15f+bob,z-0.205f,0.105f,0.24f,0.025f,0.88f,0.87f,0.82f);
+            sphere(x,1.48f+bob,z,0.105f,0.12f,0.105f,skinR,skinG,skinB);
+
+            // Arms with rounded upper arms, elbows, forearms and hands.
+            sphere(x-0.37f,1.31f+bob,z,0.16f,0.19f,0.16f,jacketR,jacketG,jacketB);
+            sphere(x+0.37f,1.31f+bob,z,0.16f,0.19f,0.16f,jacketR,jacketG,jacketB);
+            sphere(x-0.44f,1.08f+bob,z,0.115f,0.22f,0.12f,0.09f,0.21f,0.61f);
+            sphere(x+0.44f,1.08f+bob,z,0.115f,0.22f,0.12f,0.09f,0.21f,0.61f);
+            sphere(x-0.46f,0.84f+bob,z-0.005f,0.09f,0.10f,0.09f,skinR,skinG,skinB);
+            sphere(x+0.46f,0.84f+bob,z-0.005f,0.09f,0.10f,0.09f,skinR,skinG,skinB);
+
+            // Neck, shaped head, ears, hair and facial features.
+            sphere(x,1.55f+bob,z,0.095f,0.13f,0.095f,skinR,skinG,skinB);
+            sphere(x,1.76f+bob,z,0.205f,0.255f,0.19f,skinR,skinG,skinB);
+            sphere(x-0.205f,1.75f+bob,z,0.045f,0.075f,0.045f,skinR,skinG,skinB);
+            sphere(x+0.205f,1.75f+bob,z,0.045f,0.075f,0.045f,skinR,skinG,skinB);
+            sphere(x,1.96f+bob,z+0.012f,0.21f,0.085f,0.195f,0.055f,0.035f,0.025f);
+            sphere(x-0.105f,1.79f+bob,z-0.166f,0.025f,0.025f,0.018f,0.025f,0.02f,0.018f);
+            sphere(x+0.105f,1.79f+bob,z-0.166f,0.025f,0.025f,0.018f,0.025f,0.02f,0.018f);
+            sphere(x,1.715f+bob,z-0.185f,0.032f,0.045f,0.028f,0.53f,0.30f,0.20f);
+            sphere(x,1.655f+bob,z-0.178f,0.052f,0.012f,0.012f,0.22f,0.055f,0.045f);
+            // Small jacket collar and backpack details.
+            sphere(x,1.43f+bob,z+0.19f,0.19f,0.10f,0.045f,0.065f,0.12f,0.32f);
+            sphere(x,1.12f+bob,z+0.22f,0.18f,0.24f,0.065f,0.07f,0.085f,0.11f);
         }
         private void streetLamp(float x,float z) {
             box(x,1.45f,z,0.055f,1.45f,0.055f,0.20f,0.21f,0.23f);
