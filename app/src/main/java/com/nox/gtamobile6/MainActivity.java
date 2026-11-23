@@ -176,16 +176,10 @@ public class MainActivity extends Activity {
             for (int x=-4;x<=4;x++) for (int z=-4;z<=4;z++) {
                 if (Math.abs(x)<=1 || Math.abs(z)<=1) continue;
                 float bx=x*8.4f, bz=z*8.4f;
-                float bh=2.8f + ((x*x+z*z+x*3+z*5)&3)*1.15f;
-                float bw=1.8f+((x+z+12)&1)*0.55f;
-                float r=0.30f + ((x+z+16)&3)*0.045f;
-                box(bx,bh*0.5f,bz,bw,bh*0.5f,2.35f,r,0.37f,0.40f);
-                box(bx,bh+0.14f,bz,0.72f,0.14f,0.72f,0.18f,0.20f,0.23f);
-                for (int floor=0; floor<Math.max(1,(int)(bh/1.0f)); floor++) {
-                    float wy=0.45f+floor*0.92f;
-                    box(bx-bw*0.48f,wy,bz-2.36f,0.32f,0.23f,0.025f,0.28f,0.66f,0.82f);
-                    box(bx+bw*0.48f,wy,bz-2.36f,0.32f,0.23f,0.025f,0.28f,0.66f,0.82f);
-                }
+                float bh=3.0f + ((x*x+z*z+x*3+z*5)&3)*1.18f;
+                float bw=1.85f+((x+z+12)&1)*0.55f;
+                int style=(x*7+z*11+40)&3;
+                building(bx,bz,bw,bh,style);
             }
             // Secondary boulevards create distinct city districts
             for (int road=-2;road<=2;road++) {
@@ -225,12 +219,55 @@ public class MainActivity extends Activity {
             GLES20.glDisableVertexAttribArray(normalHandle);
         }
         private void trafficCar(float x,float y,float z,float r,float g,float b) {
-            box(x,y,z,0.62f,0.24f,1.05f,r,g,b);
-            box(x,y+0.27f,z-0.10f,0.40f,0.19f,0.48f,0.16f,0.22f,0.28f);
-            box(x-0.42f,y-0.12f,z-0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
-            box(x+0.42f,y-0.12f,z-0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
-            box(x-0.42f,y-0.12f,z+0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
-            box(x+0.42f,y-0.12f,z+0.66f,0.16f,0.16f,0.22f,0.06f,0.06f,0.07f);
+            // Original compact street car with curved wheel volumes and layered body.
+            box(x,y,z,0.66f,0.22f,1.12f,r,g,b);
+            box(x,y+0.20f,z-0.08f,0.48f,0.22f,0.58f,r*0.82f,g*0.82f,b*0.82f);
+            box(x,y+0.22f,z-0.08f,0.40f,0.16f,0.49f,0.12f,0.23f,0.30f);
+            box(x,y+0.22f,z+0.39f,0.40f,0.15f,0.22f,0.12f,0.20f,0.26f);
+            box(x-0.48f,y+0.02f,z-1.13f,0.12f,0.07f,0.035f,0.96f,0.88f,0.64f);
+            box(x+0.48f,y+0.02f,z-1.13f,0.12f,0.07f,0.035f,0.96f,0.88f,0.64f);
+            box(x-0.48f,y+0.02f,z+1.13f,0.12f,0.07f,0.035f,0.80f,0.10f,0.07f);
+            box(x+0.48f,y+0.02f,z+1.13f,0.12f,0.07f,0.035f,0.80f,0.10f,0.07f);
+            sphere(x-0.49f,y-0.12f,z-0.68f,0.18f,0.18f,0.18f,0.045f,0.047f,0.052f);
+            sphere(x+0.49f,y-0.12f,z-0.68f,0.18f,0.18f,0.18f,0.045f,0.047f,0.052f);
+            sphere(x-0.49f,y-0.12f,z+0.68f,0.18f,0.18f,0.18f,0.045f,0.047f,0.052f);
+            sphere(x+0.49f,y-0.12f,z+0.68f,0.18f,0.18f,0.18f,0.045f,0.047f,0.052f);
+            box(x,y-0.005f,z-0.02f,0.08f,0.012f,0.84f,0.78f,0.78f,0.72f);
+        }
+        private void building(float x,float z,float w,float h,int style) {
+            float d=2.35f;
+            float[][] palettes={{0.48f,0.46f,0.42f},{0.36f,0.40f,0.43f},{0.55f,0.49f,0.39f},{0.39f,0.43f,0.39f}};
+            float[] c=palettes[style];
+            // Main facade, darker ground-floor storefront and roof parapet.
+            box(x,h*0.5f,z,w,h*0.5f,d,c[0],c[1],c[2]);
+            box(x,0.48f,z-d*0.505f,w*0.98f,0.45f,0.035f,0.19f,0.22f,0.24f);
+            box(x,h+0.09f,z,w+0.10f,0.12f,d+0.10f,c[0]*0.72f,c[1]*0.72f,c[2]*0.72f);
+            box(x,h+0.24f,z,0.62f,0.08f,0.62f,0.20f,0.22f,0.24f);
+            int floors=Math.max(2,(int)(h/0.92f));
+            for(int floor=0;floor<floors;floor++) {
+                float wy=0.88f+floor*0.92f;
+                if(wy>h-0.18f) continue;
+                // Front and rear windows, with deep frames and sill lines.
+                for(int col=-1;col<=1;col++) {
+                    float wx=x+col*w*0.29f;
+                    box(wx,wy,z-d*0.512f,0.36f,0.25f,0.035f,0.10f,0.22f,0.29f);
+                    box(wx,wy,z-d*0.535f,0.29f,0.19f,0.018f,0.34f,0.61f,0.69f);
+                    box(wx,wy,z+d*0.512f,0.36f,0.25f,0.035f,0.10f,0.22f,0.29f);
+                    box(wx,wy,z+d*0.535f,0.29f,0.19f,0.018f,0.34f,0.61f,0.69f);
+                }
+                // Side windows and continuous floor slab details.
+                for(int side=-1;side<=1;side+=2) {
+                    for(int col=-1;col<=1;col++) {
+                        float wz=z+col*d*0.29f;
+                        box(x+side*(w*0.505f),wy,wz,0.035f,0.25f,0.34f,0.10f,0.22f,0.29f);
+                        box(x+side*(w*0.528f),wy,wz,0.018f,0.19f,0.27f,0.34f,0.61f,0.69f);
+                    }
+                }
+                box(x,wy-0.34f,z,w*0.99f,0.025f,d*1.01f,c[0]*0.82f,c[1]*0.82f,c[2]*0.82f);
+            }
+            // Awnings and entrance make the ground floor read as a real shop.
+            box(x,0.92f,z-d*0.57f,w*0.54f,0.07f,0.22f,0.72f,0.25f,0.12f);
+            box(x,0.50f,z-d*0.56f,0.36f,0.34f,0.035f,0.16f,0.35f,0.39f);
         }
         private void drawPlayer(float x,float z) {
             // Original rounded humanoid avatar. Front faces -Z.
@@ -305,8 +342,10 @@ public class MainActivity extends Activity {
             box(x+0.5f,0.16f,z,0.06f,0.20f,0.07f,0.18f,0.18f,0.18f);
         }
         private void tree(float x,float z) {
-            box(x,0.65f,z,0.16f,0.65f,0.16f,0.34f,0.20f,0.10f);
-            box(x,1.65f,z,0.72f,0.85f,0.72f,0.10f,0.38f,0.16f);
+            box(x,0.72f,z,0.12f,0.72f,0.12f,0.30f,0.18f,0.09f);
+            sphere(x,1.62f,z,0.66f,0.78f,0.66f,0.075f,0.29f,0.12f);
+            sphere(x-0.34f,1.48f,z+0.08f,0.42f,0.50f,0.43f,0.09f,0.34f,0.14f);
+            sphere(x+0.34f,1.50f,z-0.06f,0.43f,0.52f,0.42f,0.065f,0.25f,0.10f);
         }
         private void box(float x,float y,float z,float sx,float sy,float sz,float r,float g,float b) {
             Matrix.setIdentityM(model,0);
