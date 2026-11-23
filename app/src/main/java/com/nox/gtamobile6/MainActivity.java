@@ -109,7 +109,7 @@ public class MainActivity extends Activity {
             GLES20.glEnableVertexAttribArray(positionHandle);
             GLES20.glVertexAttribPointer(positionHandle,3,GLES20.GL_FLOAT,false,12,vertices);
 
-            box(0,-0.28f,0,48f,0.25f,48f,0.22f,0.42f,0.25f); // terrain
+            box(0,-0.28f,0,76f,0.25f,76f,0.22f,0.42f,0.25f); // expanded city terrain
             // Asphalt avenues and sidewalks
             box(0,-0.12f,0,5.2f,0.04f,48f,0.16f,0.17f,0.19f);
             box(0,-0.10f,0,48f,0.04f,5.2f,0.16f,0.17f,0.19f);
@@ -120,30 +120,41 @@ public class MainActivity extends Activity {
                 box(i*4.2f,-0.045f,0,0.055f,0.018f,2.0f,0.92f,0.88f,0.66f);
                 box(0,-0.045f,i*4.2f,2.0f,0.018f,0.055f,0.92f,0.88f,0.66f);
             }
-            // Original low-poly city blocks
-            for (int x=-3;x<=3;x++) for (int z=-3;z<=3;z++) {
+            // Expanded urban grid: varied towers, apartments and commercial blocks
+            for (int x=-4;x<=4;x++) for (int z=-4;z<=4;z++) {
                 if (Math.abs(x)<=1 || Math.abs(z)<=1) continue;
-                float bx=x*7.2f, bz=z*7.2f;
-                float bh=2.0f + ((x*x+z*z)%4)*0.8f;
-                float r=0.34f + ((x+z+8)%3)*0.07f;
-                box(bx,bh*0.5f,bz,2.2f,bh*0.5f,2.2f,r,0.38f,0.42f);
-                // rooftop detail and illuminated-looking window panels
-                box(bx,bh+0.12f,bz,0.65f,0.12f,0.65f,0.25f,0.28f,0.32f);
-                for (int floor=0; floor<Math.max(1,(int)(bh/1.15f)); floor++) {
-                    float wy=0.35f+floor*1.0f;
-                    box(bx-0.72f,wy,bz-2.205f,0.34f,0.25f,0.025f,0.30f,0.68f,0.82f);
-                    box(bx+0.72f,wy,bz-2.205f,0.34f,0.25f,0.025f,0.30f,0.68f,0.82f);
+                float bx=x*8.4f, bz=z*8.4f;
+                float bh=2.8f + ((x*x+z*z+x*3+z*5)&3)*1.15f;
+                float bw=1.8f+((x+z+12)&1)*0.55f;
+                float r=0.30f + ((x+z+16)&3)*0.045f;
+                box(bx,bh*0.5f,bz,bw,bh*0.5f,2.35f,r,0.37f,0.40f);
+                box(bx,bh+0.14f,bz,0.72f,0.14f,0.72f,0.18f,0.20f,0.23f);
+                for (int floor=0; floor<Math.max(1,(int)(bh/1.0f)); floor++) {
+                    float wy=0.45f+floor*0.92f;
+                    box(bx-bw*0.48f,wy,bz-2.36f,0.32f,0.23f,0.025f,0.28f,0.66f,0.82f);
+                    box(bx+bw*0.48f,wy,bz-2.36f,0.32f,0.23f,0.025f,0.28f,0.66f,0.82f);
+                }
+            }
+            // Secondary boulevards create distinct city districts
+            for (int road=-2;road<=2;road++) {
+                if (road==0) continue;
+                float lane=road*14.5f;
+                box(lane,-0.115f,0,2.5f,0.045f,70f,0.18f,0.19f,0.21f);
+                box(0,-0.115f,lane,70f,0.045f,2.5f,0.18f,0.19f,0.21f);
+                for(int mark=-6;mark<=6;mark++) {
+                    box(lane,-0.055f,mark*5.0f,0.045f,0.012f,1.6f,0.88f,0.82f,0.64f);
+                    box(mark*5.0f,-0.055f,lane,1.6f,0.012f,0.045f,0.88f,0.82f,0.64f);
                 }
             }
             // Trees around the blocks
-            for (int i=-3;i<=3;i++) {
-                tree(i*7.2f+2.1f, -3.7f);
-                tree(i*7.2f-2.1f, 3.7f);
+            for (int i=-4;i<=4;i++) {
+                tree(i*8.4f+2.1f, -5.2f);
+                tree(i*8.4f-2.1f, 5.2f);
             }
             // Street furniture: lamps and bus-stop shelters
             for (int i=-3;i<=3;i++) {
-                streetLamp(i*7.2f+3.0f,-5.0f);
-                streetLamp(i*7.2f-3.0f,5.0f);
+                streetLamp(i*8.4f+3.0f,-6.0f);
+                streetLamp(i*8.4f-3.0f,6.0f);
             }
             // Small park plaza with paths and benches
             box(10f,-0.015f,10f,3.2f,0.035f,3.2f,0.28f,0.48f,0.25f);
@@ -182,6 +193,9 @@ public class MainActivity extends Activity {
             box(x+0.17f,0.055f+bob,z-0.04f,0.17f,0.09f,0.25f,0.045f,0.05f,0.06f);
             box(x,1.48f+bob,z,0.25f,0.29f,0.23f,0.72f,0.48f,0.32f); // head
             box(x,1.69f+bob,z,0.26f,0.12f,0.25f,0.08f,0.055f,0.04f); // hair
+            box(x-0.29f,0.94f+bob,z+0.02f,0.10f,0.30f,0.18f,0.06f,0.12f,0.38f); // jacket side detail
+            box(x+0.29f,0.94f+bob,z+0.02f,0.10f,0.30f,0.18f,0.06f,0.12f,0.38f);
+            box(x,1.17f+bob,z+0.25f,0.22f,0.25f,0.08f,0.08f,0.10f,0.13f); // backpack
             box(x-0.09f,1.50f+bob,z-0.205f,0.035f,0.035f,0.025f,0.04f,0.04f,0.04f);
             box(x+0.09f,1.50f+bob,z-0.205f,0.035f,0.035f,0.025f,0.04f,0.04f,0.04f);
         }
