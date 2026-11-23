@@ -212,7 +212,7 @@ public class MainActivity extends Activity {
         @Override public void onSurfaceChanged(GL10 gl, int w, int h) {
             width = Math.max(1,w); height = Math.max(1,h);
             GLES20.glViewport(0,0,width,height);
-            Matrix.perspectiveM(projection,0,55f,(float)width/height,0.1f,120f);
+            Matrix.perspectiveM(projection,0,60f,(float)width/height,0.1f,120f);
         }
         @Override public void onDrawFrame(GL10 gl) {
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT | GLES20.GL_DEPTH_BUFFER_BIT);
@@ -220,7 +220,7 @@ public class MainActivity extends Activity {
                 playerX += moveX*0.075f; playerZ += moveZ*0.075f;
                 targetX=playerX; targetZ=playerZ;
             } else { playerX += (targetX-playerX)*0.045f; playerZ += (targetZ-playerZ)*0.045f; }
-            Matrix.setLookAtM(view,0,playerX+8f,8.5f,playerZ+11f,playerX,0f,playerZ,0f,1f,0f);
+            Matrix.setLookAtM(view,0,playerX+4.8f,5.4f,playerZ+7.2f,playerX,0.85f,playerZ,0f,1f,0f);
             GLES20.glUseProgram(program);
             vertices.position(0);
             GLES20.glEnableVertexAttribArray(positionHandle);
@@ -374,11 +374,11 @@ public class MainActivity extends Activity {
             // Shoes follow the alternating stride instead of sliding in place.
             sphere(x-0.145f,0.105f+bob,z-0.11f+legSwing*0.72f,0.15f,0.09f,0.25f,0.035f,0.04f,0.055f);
             sphere(x+0.145f,0.105f+bob,z-0.11f-legSwing*0.72f,0.15f,0.09f,0.25f,0.035f,0.04f,0.055f);
-            // Lower legs and knees.
-            sphere(x-0.145f,0.34f+bob,z+legSwing*0.36f,0.105f,0.22f,0.11f,0.16f,0.18f,0.22f);
-            sphere(x+0.145f,0.34f+bob,z-legSwing*0.36f,0.105f,0.22f,0.11f,0.16f,0.18f,0.22f);
-            sphere(x-0.145f,0.66f+bob+legSwing,z+legSwing*0.18f,0.13f,0.24f,0.14f,pantsR,pantsG,pantsB);
-            sphere(x+0.145f,0.66f+bob-legSwing,z-legSwing*0.18f,0.13f,0.24f,0.14f,pantsR,pantsG,pantsB);
+            // Tapered, articulated trouser legs with rounded knee and calf transitions.
+            segment(x-0.145f,0.83f+bob,z,x-0.145f,0.48f+bob+legSwing,z+legSwing*0.36f,0.125f,pantsR,pantsG,pantsB);
+            segment(x-0.145f,0.48f+bob+legSwing,z+legSwing*0.36f,x-0.145f,0.18f+bob,z+legSwing*0.72f,0.092f,0.16f,0.18f,0.22f);
+            segment(x+0.145f,0.83f+bob,z,x+0.145f,0.48f+bob-legSwing,z-legSwing*0.36f,0.125f,pantsR,pantsG,pantsB);
+            segment(x+0.145f,0.48f+bob-legSwing,z-legSwing*0.36f,x+0.145f,0.18f+bob,z-legSwing*0.72f,0.092f,0.16f,0.18f,0.22f);
             sphere(x,0.91f+bob,z,0.255f,0.19f,0.16f,0.09f,0.15f,0.36f);
 
             // Jacket, chest panels and collar.
@@ -394,12 +394,17 @@ public class MainActivity extends Activity {
             // Arms swing in opposition to the legs, with elbows and hands.
             sphere(x-0.335f,1.34f+bob,z,0.155f,0.17f,0.155f,jacketR,jacketG,jacketB);
             sphere(x+0.335f,1.34f+bob,z,0.155f,0.17f,0.155f,jacketR,jacketG,jacketB);
-            sphere(x-0.405f-armSwing*0.35f,1.19f+bob,z-armSwing*0.45f,0.105f,0.17f,0.105f,0.085f,0.21f,0.56f);
-            sphere(x+0.405f+armSwing*0.35f,1.19f+bob,z+armSwing*0.45f,0.105f,0.17f,0.105f,0.085f,0.21f,0.56f);
-            sphere(x-0.42f-armSwing*0.7f,1.04f+bob,z-armSwing*0.7f,0.095f,0.13f,0.095f,0.075f,0.18f,0.48f);
-            sphere(x+0.42f+armSwing*0.7f,1.04f+bob,z+armSwing*0.7f,0.095f,0.13f,0.095f,0.075f,0.18f,0.48f);
-            sphere(x-0.435f-armSwing,0.99f+bob,z-armSwing,0.09f,0.17f,0.095f,skinR,skinG,skinB);
-            sphere(x+0.435f+armSwing,0.99f+bob,z+armSwing,0.09f,0.17f,0.095f,skinR,skinG,skinB);
+            float leftShoulderX=x-0.34f, rightShoulderX=x+0.34f;
+            float leftElbowX=x-0.42f-armSwing*0.35f, rightElbowX=x+0.42f+armSwing*0.35f;
+            float leftHandX=x-0.435f-armSwing, rightHandX=x+0.435f+armSwing;
+            float leftElbowY=1.13f+bob, rightElbowY=1.13f+bob;
+            float handY=0.88f+bob;
+            segment(leftShoulderX,1.34f+bob,z,leftElbowX,leftElbowY,z-armSwing*0.45f,0.125f,0.085f,0.21f,0.56f);
+            segment(rightShoulderX,1.34f+bob,z,rightElbowX,rightElbowY,z+armSwing*0.45f,0.125f,0.085f,0.21f,0.56f);
+            segment(leftElbowX,leftElbowY,z-armSwing*0.45f,leftHandX,handY,z-armSwing,0.092f,0.075f,0.18f,0.48f);
+            segment(rightElbowX,rightElbowY,z+armSwing*0.45f,rightHandX,handY,z+armSwing,0.092f,0.075f,0.18f,0.48f);
+            sphere(leftHandX,handY-0.04f,z-armSwing,0.075f,0.09f,0.075f,skinR,skinG,skinB);
+            sphere(rightHandX,handY-0.04f,z+armSwing,0.075f,0.09f,0.075f,skinR,skinG,skinB);
             sphere(x-0.445f-armSwing,0.82f+bob,z-armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
             sphere(x+0.445f+armSwing,0.82f+bob,z+armSwing,0.085f,0.085f,0.085f,skinR,skinG,skinB);
 
@@ -423,6 +428,29 @@ public class MainActivity extends Activity {
             sphere(x,1.13f+bob,z+0.205f,0.19f,0.25f,0.075f,0.045f,0.055f,0.075f);
             sphere(x-0.24f,1.12f+bob,z+0.08f,0.035f,0.19f,0.045f,0.055f,0.10f,0.28f);
             sphere(x+0.24f,1.12f+bob,z+0.08f,0.035f,0.19f,0.045f,0.055f,0.10f,0.28f);
+        }
+        // Rounded limb mesh: an ellipsoid aligned between two joints instead of detached balls.
+        private void segment(float ax,float ay,float az,float bx,float by,float bz,float radius,float r,float g,float b) {
+            float dx=bx-ax, dy=by-ay, dz=bz-az;
+            float length=(float)Math.sqrt(dx*dx+dy*dy+dz*dz);
+            if(length<0.001f) return;
+            float mx=(ax+bx)*0.5f, my=(ay+by)*0.5f, mz=(az+bz)*0.5f;
+            Matrix.setIdentityM(model,0);
+            Matrix.translateM(model,0,mx,my,mz);
+            float dot=Math.max(-1f,Math.min(1f,dy/length));
+            float angle=(float)Math.toDegrees(Math.acos(dot));
+            float rx=dz, rz=-dx;
+            if(Math.abs(angle)>0.01f && (Math.abs(rx)+Math.abs(rz))>0.0001f) Matrix.rotateM(model,0,angle,rx,0f,rz);
+            Matrix.scaleM(model,0,radius,length*0.62f,radius);
+            Matrix.multiplyMM(temp,0,view,0,model,0);
+            Matrix.multiplyMM(mvp,0,projection,0,temp,0);
+            GLES20.glUniformMatrix4fv(mvpHandle,1,false,mvp,0);
+            GLES20.glUniformMatrix4fv(modelHandle,1,false,model,0);
+            GLES20.glUniform4f(colorHandle,r,g,b,1f);
+            sphereVertices.position(0);
+            GLES20.glVertexAttribPointer(positionHandle,3,GLES20.GL_FLOAT,false,12,sphereVertices);
+            GLES20.glVertexAttribPointer(normalHandle,3,GLES20.GL_FLOAT,false,12,sphereVertices);
+            GLES20.glDrawArrays(GLES20.GL_TRIANGLES,0,sphereVertexCount);
         }
         private void streetLamp(float x,float z) {
             box(x,1.45f,z,0.055f,1.45f,0.055f,0.20f,0.21f,0.23f);
