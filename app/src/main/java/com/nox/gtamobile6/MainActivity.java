@@ -260,7 +260,10 @@ public class MainActivity extends Activity {
         private volatile float playerX = 0, playerZ = 0, targetX = 0, targetZ = 0;
         private volatile float moveX = 0f, moveZ = 0f;
         private volatile float cameraYaw = 0f, cameraPitch = 5.4f;
-        private int width = 1, height = 1;\n        private final AssetManager assets;\n        private HumanModel humanModel;\n        CityRenderer(AssetManager assets) { this.assets=assets; }
+        private int width = 1, height = 1;
+        private final AssetManager assets;
+        private HumanModel humanModel;
+        CityRenderer(AssetManager assets) { this.assets=assets; }
 
         void setMoveInput(float x, float z) { moveX = Math.max(-1f,Math.min(1f,x)); moveZ = Math.max(-1f,Math.min(1f,z)); }
         void rotateCamera(float dx,float dy) {
@@ -285,7 +288,8 @@ public class MainActivity extends Activity {
             }
             ByteBuffer nb=ByteBuffer.allocateDirect(faceNormals.length*4).order(ByteOrder.nativeOrder());
             cubeNormals=nb.asFloatBuffer(); cubeNormals.put(faceNormals).position(0);
-            sphereVertices = buildSphere(24, 32);\n            humanModel = HumanModel.load(assets);
+            sphereVertices = buildSphere(24, 32);
+            humanModel = HumanModel.load(assets);
             sphereVertexCount = sphereVertices.limit() / 3;
             int v = shader(GLES20.GL_VERTEX_SHADER, VS);
             int f = shader(GLES20.GL_FRAGMENT_SHADER, FS);
@@ -421,7 +425,10 @@ public class MainActivity extends Activity {
             trafficCar(-8f, 0.28f, 3.9f, 0.82f, 0.68f, 0.12f);
             trafficCar(8f, 0.28f, -3.9f, 0.20f, 0.68f, 0.38f);
             // Detailed original player avatar: jacket, shirt, trousers, shoes, hair and face
-            if(humanModel!=null) {\n                float bob=(float)Math.sin(System.nanoTime()*0.0000000024)*0.012f;\n                humanModel.draw(this,playerX,bob,playerZ);\n            } else { drawPlayer(playerX,playerZ); }
+            if(humanModel!=null) {
+                float bob=(float)Math.sin(System.nanoTime()*0.0000000024)*0.012f;
+                humanModel.draw(this,playerX,bob,playerZ);
+            } else { drawPlayer(playerX,playerZ); }
             GLES20.glDisableVertexAttribArray(positionHandle);
             GLES20.glDisableVertexAttribArray(normalHandle);
         }
